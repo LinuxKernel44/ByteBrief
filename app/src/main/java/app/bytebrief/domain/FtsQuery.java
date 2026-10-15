@@ -5,7 +5,7 @@ import androidx.annotation.Nullable;
 import java.util.ArrayList;
 import java.util.List;
 
-/** Turns free-form user input into a safe FTS4 MATCH expression (prefix match, implicit AND). */
+/** Turns free-form user input into a safe FTS4 MATCH expression (prefix match per term, implicit AND). */
 public final class FtsQuery {
     private static final int MAX_TERMS = 8;
 
@@ -33,7 +33,8 @@ public final class FtsQuery {
         for (int i = 0; i < Math.min(terms.size(), MAX_TERMS); i++) {
             if (i > 0) sb.append(' ');
             // Only letters and digits survive, so quoting cannot be broken out of; operators become literals.
-            sb.append('"').append(terms.get(i)).append("\"*");
+            // FTS4 syntax: the prefix operator goes inside the quotes (unlike FTS5).
+            sb.append('"').append(terms.get(i)).append("*\"");
         }
         return sb.toString();
     }
