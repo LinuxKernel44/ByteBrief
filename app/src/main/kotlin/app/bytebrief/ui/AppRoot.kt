@@ -134,14 +134,13 @@ private fun AppContent(nav: NavState) {
         // The home layer stays composed under overlays so list scroll positions survive navigating back.
         Row(Modifier.fillMaxSize()) {
             Box(if (detailBeside) Modifier.width(420.dp).fillMaxHeight() else Modifier.fillMaxSize()) {
-                Crossfade(home.tab, animationSpec = tween(animMs), label = "tab") { tab ->
-                    when (tab) {
-                        Tab.ForYou -> ForYouScreen()
-                        Tab.Browse -> BrowseScreen()
-                        Tab.Briefing -> BriefingScreen()
-                        Tab.Saved -> SavedScreen()
-                        Tab.More -> MoreScreen()
-                    }
+                // Tabs switch instantly: each screen owns its glass bars, so cross-fading would briefly show two bars.
+                when (home.tab) {
+                    Tab.ForYou -> ForYouScreen()
+                    Tab.Browse -> BrowseScreen()
+                    Tab.Briefing -> BriefingScreen()
+                    Tab.Saved -> SavedScreen()
+                    Tab.More -> MoreScreen()
                 }
             }
             if (detailBeside) {

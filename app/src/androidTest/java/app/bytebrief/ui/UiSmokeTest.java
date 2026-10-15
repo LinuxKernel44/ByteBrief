@@ -15,6 +15,9 @@ import androidx.test.uiautomator.UiObject2;
 import androidx.test.uiautomator.Until;
 
 import org.junit.After;
+import org.junit.Rule;
+import org.junit.rules.TestWatcher;
+import org.junit.runner.Description;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -35,6 +38,21 @@ import app.bytebrief.domain.SourceType;
  */
 public class UiSmokeTest {
     private static final long TIMEOUT = 8_000;
+    /** On failure, leaves a screenshot and the view hierarchy in /data/local/tmp for post-mortem (adb pull). */
+    @Rule
+    public TestWatcher artifacts = new TestWatcher() {
+        @Override
+        protected void failed(Throwable e, Description d) {
+            try {
+                String base = "/data/local/tmp/fail-" + d.getMethodName();
+                device.executeShellCommand("screencap -p " + base + ".png");
+                device.executeShellCommand("uiautomator dump " + base + ".xml");
+            } catch (Exception ignored) {
+                // Diagnostics must never mask the real failure.
+            }
+        }
+    };
+
     private UiDevice device;
     private AppContainer container;
     private Context context;
@@ -76,6 +94,26 @@ public class UiSmokeTest {
         return o;
     }
 
+    /** Finds and clicks in one step, retrying when the node was replaced by a recomposition in between. */
+    private void clickDesc(String d) {
+        clickWhere(By.desc(d), d);
+    }
+
+    private void clickWhere(androidx.test.uiautomator.BySelector selector, String what) {
+        for (int attempt = 0; attempt < 5; attempt++) {
+            device.waitForIdle();
+            UiObject2 o = device.wait(Until.findObject(selector), TIMEOUT);
+            assertNotNull("not found on screen: " + what, o);
+            try {
+                o.click();
+                return;
+            } catch (androidx.test.uiautomator.StaleObjectException e) {
+                // The UI changed between find and click; look again.
+            }
+        }
+        throw new AssertionError("could not click " + what);
+    }
+
     private void assertAlive() {
         assertTrue("the app process died (native crash?)", device.wait(Until.hasObject(By.pkg(context.getPackageName())), 2_000));
     }
@@ -84,7 +122,7 @@ public class UiSmokeTest {
     public void launchesWithGlassAndShowsEveryTab() {
         launch();
         for (String tab : new String[]{"For You", "Browse", "Briefing", "Saved", "More"}) {
-            desc(tab).click();
+            clickDesc(tab);
             device.waitForIdle();
             assertAlive();
         }
@@ -93,10 +131,8 @@ public class UiSmokeTest {
     @Test
     public void showsSeededItemsAndOpensDetail() {
         launch();
-        desc("Browse").click();
-        UiObject2 card = device.wait(Until.findObject(By.descContains("Smoke test article about parsers")), TIMEOUT);
-        assertNotNull("seeded item missing from Browse", card);
-        card.click();
+        clickDesc("Browse");
+        clickWhere(By.descContains("Smoke test article about parsers"), "seeded item in Browse");
         // Detail shows the stored text and the offline indicator.
         assertNotNull(device.wait(Until.findObject(By.descContains("Offline: Full text saved")), TIMEOUT));
         assertAlive();
@@ -107,11 +143,9 @@ public class UiSmokeTest {
     @Test
     public void everySecondaryScreenOpensAndGoesBack() {
         launch();
-        desc("More").click();
+        clickDesc("More");
         for (String row : new String[]{"Language models", "Sources", "Settings", "About"}) {
-            UiObject2 r = device.wait(Until.findObject(By.descStartsWith(row)), TIMEOUT);
-            assertNotNull("More row missing: " + row, r);
-            r.click();
+            clickWhere(By.descStartsWith(row), "More row " + row);
             device.waitForIdle();
             assertAlive();
             device.pressBack();
@@ -122,12 +156,15 @@ public class UiSmokeTest {
     @Test
     public void searchFindsStoredText() {
         launch();
-        desc("For You").click();
-        desc("Search").click();
-        UiObject2 field = device.wait(Until.findObject(By.desc("Search titles, text and topics")), TIMEOUT);
-        assertNotNull(field);
-        field.click();
-        field.setText("parsers");
+        clickDesc("For You");
+        clickDesc("Search");
+        clickWhere(By.desc("Search titles, text and topics"), "search field");
+        // setText does not always reach a Compose text field; type through the input service like a user would.
+        try {
+            device.executeShellCommand("input text parsers");
+        } catch (java.io.IOException e) {
+            throw new AssertionError(e);
+        }
         assertNotNull("search result missing", device.wait(Until.findObject(By.descContains("Smoke test article about parsers")), TIMEOUT));
         assertAlive();
     }
@@ -136,7 +173,7 @@ public class UiSmokeTest {
     public void solidSurfaceModeAlsoRenders() {
         container.settings.setOpaqueSurfaces(true);
         launch();
-        desc("Browse").click();
+        clickDesc("Browse");
         assertNotNull(device.wait(Until.findObject(By.descContains("Smoke test article about parsers")), TIMEOUT));
         assertAlive();
         container.settings.setOpaqueSurfaces(false);
@@ -145,7 +182,7 @@ public class UiSmokeTest {
     @Test
     public void briefingWorksWithoutAModel() {
         launch();
-        desc("Briefing").click();
+        clickDesc("Briefing");
         assertNotNull("briefing rows missing", device.wait(Until.findObject(By.descContains("Smoke test article about parsers")), TIMEOUT));
         assertEquals(false, container.engine.isReady());
     }

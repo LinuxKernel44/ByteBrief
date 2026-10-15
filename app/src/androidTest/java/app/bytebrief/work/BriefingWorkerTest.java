@@ -78,8 +78,7 @@ public class BriefingWorkerTest {
         ListenableWorker.Result result = ((BriefingWorker) worker).doWork();
         assertEquals(ListenableWorker.Result.success(), result);
 
-        StatusBarNotification posted = null;
-        for (StatusBarNotification n : nm.getActiveNotifications()) if (n.getId() == Notifier.ID_BRIEFING) posted = n;
+        StatusBarNotification posted = awaitNotification(Notifier.ID_BRIEFING);
         assertNotNull("no briefing notification was posted", posted);
         Notification n = posted.getNotification();
         assertEquals(Notifier.CHANNEL_BRIEFING, n.getChannelId());
@@ -97,11 +96,22 @@ public class BriefingWorkerTest {
         assertEquals(WorkInfo.State.ENQUEUED, next.get(0).getState());
     }
 
+    /** Notifications are delivered asynchronously by the system, so poll briefly instead of assuming instant delivery. */
+    private StatusBarNotification awaitNotification(int id) throws InterruptedException {
+        long deadline = System.currentTimeMillis() + 5_000;
+        while (System.currentTimeMillis() < deadline) {
+            for (StatusBarNotification n : nm.getActiveNotifications()) if (n.getId() == id) return n;
+            Thread.sleep(100);
+        }
+        return null;
+    }
+
     @Test
     public void disabledBriefingDoesNothing() throws Exception {
         c.settings.setBriefingEnabled(false);
         ListenableWorker.Result result = ((BriefingWorker) TestListenableWorkerBuilder.from(context, BriefingWorker.class).build()).doWork();
         assertEquals(ListenableWorker.Result.success(), result);
+        Thread.sleep(1_000); // give a wrongly posted notification time to appear before asserting its absence
         for (StatusBarNotification n : nm.getActiveNotifications()) assertTrue(n.getId() != Notifier.ID_BRIEFING);
     }
 
@@ -110,6 +120,7 @@ public class BriefingWorkerTest {
         c.db.clearAllTables();
         ListenableWorker.Result result = ((BriefingWorker) TestListenableWorkerBuilder.from(context, BriefingWorker.class).build()).doWork();
         assertEquals(ListenableWorker.Result.success(), result);
+        Thread.sleep(1_000);
         for (StatusBarNotification n : nm.getActiveNotifications()) assertTrue(n.getId() != Notifier.ID_BRIEFING);
     }
 

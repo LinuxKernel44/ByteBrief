@@ -1,0 +1,54 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          submodules: recursive
+
+      - uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      - uses: android-actions/setup-android@v4
+
+      - name: Install SDK components
+        run: |
+          sdkmanager "platforms;android-37.0" "build-tools;36.0.0" "ndk;29.0.13113456" "cmake;3.31.6"
+
+      - uses: gradle/actions/setup-gradle@v6
+
+      - name: Unit tests, lint, release build (unsigned)
+        run: ./gradlew :app:testDebugUnitTest :app:lintRelease :app:assembleRelease --stacktrace
+
+      - name: Upload reports
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: reports
+          path: |
+            app/build/reports/**
+            app/build/test-results/**
+          if-no-files-found: ignore
+
+      - name: Upload unsigned APKs
+        uses: actions/upload-artifact@v7
+        with:
+          name: apks-unsigned
+          path: app/build/outputs/apk/release/*.apk

@@ -8,3 +8,4 @@ local.properties
 *.keystore
 keystore.properties
 *.gguf
+prompt.txt

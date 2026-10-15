@@ -1,0 +1,18 @@
+ByteBrief
+Copyright 2026 LinuxKernel44 and contributors
+Licensed under the Apache License, Version 2.0.
+
+This product bundles or builds on the following third-party software:
+
+* llama.cpp — Copyright (c) 2023-2026 The ggml authors — MIT License
+  https://github.com/ggml-org/llama.cpp
+* Backdrop ("Liquid Glass") and Shapes by Kyant0 — Apache License 2.0
+  https://github.com/Kyant0/AndroidLiquidGlass
+* Jetpack Compose, AndroidX Room, WorkManager, Lifecycle, Activity — Apache License 2.0
+* Kotlin standard library — Apache License 2.0
+* OkHttp and Okio, Square, Inc. — Apache License 2.0
+* jsoup — Copyright (c) Jonathan Hedley — MIT License
+* kxml2 and org.json are used by tests only.
+
+Language models are not part of this distribution. They are downloaded by the user from their publishers
+(Qwen3-4B-Instruct-2507 and Qwen2.5-1.5B-Instruct, Apache License 2.0, by the Qwen Team).
