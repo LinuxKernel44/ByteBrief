@@ -81,7 +81,7 @@ object MarkdownLite {
                 line.trimStart().startsWith(">") -> { flush(); out.add(MdBlock.Quote(line.trimStart().removePrefix(">").trim())) }
                 line.isBlank() -> flush()
                 // Images and HTML-only lines are noise in a text reader.
-                line.trim().startsWith("<") || line.trim().startsWith("![") -> flush()
+                line.trim().startsWith("<") || line.trim().startsWith("![") || line.trim().startsWith("[![") -> flush()
                 else -> { if (para.isNotEmpty()) para.append(' '); para.append(line.trim()) }
             }
             i++
@@ -93,7 +93,8 @@ object MarkdownLite {
     /** Inline formatting: `code`, **bold**, and [label](url) shown as just the label. */
     fun inline(text: String): AnnotatedString = buildAnnotatedString {
         var i = 0
-        val t = text.replace(Regex("\\[([^\\]]+)]\\([^)]*\\)"), "$1")
+        // Images carry no text; links keep only their label.
+        val t = text.replace(Regex("!\\[[^\\]]*]\\([^)]*\\)"), "").replace(Regex("\\[([^\\]]+)]\\([^)]*\\)"), "$1").trim()
         while (i < t.length) {
             when {
                 t.startsWith("**", i) && t.indexOf("**", i + 2) > 0 -> {

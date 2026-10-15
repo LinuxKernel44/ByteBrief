@@ -46,6 +46,8 @@ final class OutputParsers {
         if (summary.length() < 40) throw new ValidationException("\"summary\" is empty or too short; write 3 to 6 sentences");
         int sentences = countSentences(summary);
         if (sentences > 8) throw new ValidationException("\"summary\" has " + sentences + " sentences; use at most 6");
+        // Small models often paste the summary into the interpretation field; an echo adds nothing, so it is dropped.
+        if (restates(summary, interpretation)) interpretation = "";
         return Parsed.of(new Summary(summary, interpretation, truncated, chunked));
     }
 
@@ -120,6 +122,17 @@ final class OutputParsers {
             if (!s.isEmpty() && !out.contains(s)) out.add(s);
         }
         return out;
+    }
+
+    /** True when {@code candidate} is (nearly) the same text as {@code reference}: at least 60% shared words. */
+    static boolean restates(String reference, String candidate) {
+        if (candidate.isEmpty()) return false;
+        java.util.Set<String> ref = new HashSet<>(java.util.Arrays.asList(TextClean.fold(reference).split(" ")));
+        java.util.Set<String> cand = new HashSet<>(java.util.Arrays.asList(TextClean.fold(candidate).split(" ")));
+        if (cand.isEmpty()) return true;
+        int shared = 0;
+        for (String w : cand) if (ref.contains(w)) shared++;
+        return shared >= cand.size() * 0.6;
     }
 
     static int countSentences(String s) {

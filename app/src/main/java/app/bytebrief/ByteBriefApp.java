@@ -7,6 +7,8 @@ import android.os.Bundle;
 
 /** Application entry point: creates the dependency container and registers background work. */
 public final class ByteBriefApp extends Application {
+    // Holds only the application context, which lives as long as the process, so this static reference cannot leak an Activity.
+    @android.annotation.SuppressLint("StaticFieldLeak")
     private static volatile AppContainer container;
     private static volatile int startedActivities;
 

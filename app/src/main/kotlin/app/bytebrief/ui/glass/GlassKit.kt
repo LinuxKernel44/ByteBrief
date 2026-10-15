@@ -5,6 +5,7 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
@@ -28,6 +29,9 @@ import com.kyant.backdrop.effects.blur
 import com.kyant.backdrop.effects.lens
 import com.kyant.backdrop.effects.vibrancy
 import com.kyant.shapes.RoundedRectangle
+
+/** Widest comfortable reading column. */
+val MaxContentWidth = 720.dp
 
 /** The backdrop that glass surfaces of the current screen refract. */
 val LocalBackdrop = compositionLocalOf<Backdrop?> { null }
@@ -118,7 +122,12 @@ fun BoxScope.BackdropSource(modifier: Modifier = Modifier.fillMaxSize(), content
     val backdrop = LocalBackdrop.current as? com.kyant.backdrop.backdrops.LayerBackdrop
     Box(modifier.then(if (backdrop != null) Modifier.layerBackdrop(backdrop) else Modifier)) {
         AtmosphericBackground()
-        CompositionLocalProvider(LocalInBackdropSource provides true) { content() }
+        // On wide screens a single column of readable width is centered instead of stretching edge to edge.
+        Box(Modifier.fillMaxSize(), contentAlignment = androidx.compose.ui.Alignment.TopCenter) {
+            Box(Modifier.widthIn(max = MaxContentWidth).fillMaxSize()) {
+                CompositionLocalProvider(LocalInBackdropSource provides true) { content() }
+            }
+        }
     }
 }
 

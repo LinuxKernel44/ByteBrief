@@ -129,6 +129,23 @@ public class AiPipelineTest {
         assertFalse(r.value.interpretation.contains("javascript:"));
     }
 
+    @Test
+    public void interpretationThatEchoesTheSummaryIsDropped() {
+        gen.reply("{\"sufficient\":true,\"summary\":\"Liquid Glass renders glass effects on Android with AGSL shaders. It needs API 33 and ships no ready-made components.\","
+                + "\"interpretation\":\"Liquid Glass renders glass effects on Android using AGSL shaders and needs API 33 with no ready-made components.\"}");
+        AiResult<Summary> r = summarize(ARTICLE);
+        assertTrue(r.isSuccess());
+        assertEquals("", r.value.interpretation);
+    }
+
+    @Test
+    public void genuinelyDifferentInterpretationIsKept() {
+        gen.reply("{\"sufficient\":true,\"summary\":\"Liquid Glass renders glass effects on Android with AGSL shaders. It needs API 33 and ships no ready-made components.\","
+                + "\"interpretation\":\"Probably worth trying for custom navigation bars, though older phones are excluded.\"}");
+        AiResult<Summary> r = summarize(ARTICLE);
+        assertTrue(r.value.interpretation.startsWith("Probably worth trying"));
+    }
+
     // ---- prompt safety -----------------------------------------------------------------------
 
     @Test

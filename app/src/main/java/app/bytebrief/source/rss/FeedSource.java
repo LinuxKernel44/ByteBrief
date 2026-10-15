@@ -163,7 +163,7 @@ public class FeedSource {
 
     static boolean looksLikeHtml(@Nullable String body) {
         if (body == null) return false;
-        String head = body.substring(0, Math.min(body.length(), 1024)).toLowerCase();
+        String head = body.substring(0, Math.min(body.length(), 1024)).toLowerCase(java.util.Locale.ROOT);
         int xml = head.indexOf("<rss");
         int atom = head.indexOf("<feed");
         int rdf = head.indexOf("<rdf:rdf");
@@ -175,7 +175,7 @@ public class FeedSource {
     static String discover(String html, String pageUrl) {
         Document doc = Jsoup.parse(html, pageUrl);
         for (Element link : doc.select("link[rel~=(?i)alternate][href]")) {
-            String type = link.attr("type").toLowerCase();
+            String type = link.attr("type").toLowerCase(java.util.Locale.ROOT);
             if (type.contains("rss") || type.contains("atom")) {
                 String abs = link.absUrl("href");
                 if (UrlCanonicalizer.isHttpUrl(abs)) return abs;

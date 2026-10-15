@@ -83,7 +83,7 @@ public class SyncManager {
                 out.stats.add(ingestor.ingest(r.items));
                 if (r.failures > 0) out.fail(r.failures + " stories could not be retrieved", true, 0);
             } catch (SourceException e) {
-                out.fail("Hacker News " + list.name().toLowerCase() + ": " + e.getMessage(), e.isRetryable(), e.retryAfterEpochMillis);
+                out.fail("Hacker News " + list.name().toLowerCase(java.util.Locale.ROOT) + ": " + e.getMessage(), e.isRetryable(), e.retryAfterEpochMillis);
             }
         }
     }

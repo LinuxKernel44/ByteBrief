@@ -205,7 +205,7 @@ public final class BriefingService {
                         call.complete(done(r.asFailure()));
                     } else {
                         call.complete(done(AiResult.success(compose(date, selection, null,
-                                "The model could not write the reasons (" + r.status.name().toLowerCase().replace('_', ' ') + "). Showing the ranked items.",
+                                "The model could not write the reasons (" + r.status.name().toLowerCase(java.util.Locale.ROOT).replace('_', ' ') + "). Showing the ranked items.",
                                 clock.millis()))));
                     }
                     return;

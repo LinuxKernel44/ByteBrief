@@ -68,7 +68,7 @@ public final class ImageLoader {
             ResponseBody body = r.body();
             if (!r.isSuccessful() || body == null) return null;
             String type = r.header("Content-Type", "");
-            if (type == null || !type.toLowerCase().startsWith("image/") || type.toLowerCase().contains("svg")) return null;
+            if (type == null || !type.toLowerCase(java.util.Locale.ROOT).startsWith("image/") || type.toLowerCase(java.util.Locale.ROOT).contains("svg")) return null;
             if (body.contentLength() > MAX_BYTES) return null;
             byte[] bytes = readLimited(body.byteStream());
             if (bytes == null) return null;

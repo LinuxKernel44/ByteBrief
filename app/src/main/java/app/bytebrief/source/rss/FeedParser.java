@@ -268,7 +268,7 @@ public final class FeedParser {
 
     private static String stripLeading(String xml) {
         int i = 0;
-        while (i < xml.length() && (xml.charAt(i) == '﻿' || Character.isWhitespace(xml.charAt(i)))) i++;
+        while (i < xml.length() && (xml.charAt(i) == 0xFEFF || Character.isWhitespace(xml.charAt(i)))) i++;
         return xml.substring(i);
     }
 }

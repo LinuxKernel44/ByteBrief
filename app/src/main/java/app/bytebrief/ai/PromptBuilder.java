@@ -79,7 +79,7 @@ final class PromptBuilder {
     }
 
     String explain(ContentInput in, ExplainLevel level, String doc, String marker, boolean truncated) {
-        return "Task: explain what this is and how it works for a " + level.label.toLowerCase() + " reader. " + level.instruction + " "
+        return "Task: explain what this is and how it works for a " + level.label.toLowerCase(java.util.Locale.ROOT) + " reader. " + level.instruction + " "
                 + "Base the explanation on the document. List in \"inferred\" every statement that goes beyond the document "
                 + "(background knowledge or your own inference); if there are none, use an empty list. "
                 + "You have not seen any source code or files other than the document: do not claim to have inspected them. "

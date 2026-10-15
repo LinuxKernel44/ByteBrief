@@ -35,6 +35,14 @@ class MarkdownLiteTest {
     }
 
     @Test
+    fun badgeLinesAndInlineImagesDisappear() {
+        val blocks = MarkdownLite.parse("[![npm](https://img.shields.io/x.svg)](https://npm.example)\n\nUse ![logo](l.png)the [docs](https://d.example) now.", markdown = true)
+        assertEquals(1, blocks.size)
+        val text = MarkdownLite.inline((blocks.single() as MdBlock.Paragraph).text).text
+        assertEquals("Use the docs now.", text)
+    }
+
+    @Test
     fun plainTextKeepsParagraphsAndIgnoresMarkdownSyntax() {
         val blocks = MarkdownLite.parse("# not a heading\nsecond line\n\nnext", markdown = false)
         assertEquals(listOf<MdBlock>(MdBlock.Paragraph("# not a heading second line"), MdBlock.Paragraph("next")), blocks)

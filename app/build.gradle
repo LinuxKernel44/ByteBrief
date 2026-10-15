@@ -23,6 +23,45 @@ android {
     sourceSets {
         androidTest.assets.srcDirs += ["$projectDir/schemas".toString(), "$projectDir/src/test/resources".toString()]
     }
+    lint {
+        abortOnError true
+        checkReleaseBuilds true
+        // Version-freshness hints are reviewed by hand: dependencies are pinned on purpose (see docs/DEPENDENCIES.md).
+        disable 'GradleDependency', 'NewerVersionAvailable', 'AndroidGradlePluginVersion', 'UseKtx'
+        // Android 16 (API 36) is the primary target; moving to 37 is a deliberate, separately tested change.
+        disable 'OldTargetApi'
+        // The notice only suggests an alternative way to read free space; getUsableSpace() is correct for a pre-download check.
+        disable 'UsableSpace'
+    }
+    signingConfigs {
+        release {
+            // Credentials come from keystore.properties (git-ignored) or CI secrets; never from the repository.
+            def props = new Properties()
+            def f = rootProject.file('keystore.properties')
+            if (f.exists()) f.withInputStream { props.load(it) }
+            storeFile props.getProperty('storeFile') ? file(props.getProperty('storeFile')) : null
+            storePassword props.getProperty('storePassword') ?: System.getenv('BYTEBRIEF_STORE_PASSWORD')
+            keyAlias props.getProperty('keyAlias') ?: System.getenv('BYTEBRIEF_KEY_ALIAS')
+            keyPassword props.getProperty('keyPassword') ?: System.getenv('BYTEBRIEF_KEY_PASSWORD')
+        }
+    }
+    buildTypes {
+        release {
+            minifyEnabled true
+            shrinkResources true
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+            // Unsigned release builds are still possible (for CI without secrets): signing applies only when configured.
+            if (signingConfigs.release.storeFile != null) signingConfig signingConfigs.release
+        }
+    }
+    splits {
+        abi {
+            enable true
+            reset()
+            include 'arm64-v8a', 'x86_64'
+            universalApk true
+        }
+    }
     compileOptions {
         sourceCompatibility JavaVersion.VERSION_17
         targetCompatibility JavaVersion.VERSION_17
@@ -64,6 +103,8 @@ dependencies {
     androidTestImplementation 'androidx.test:runner:1.7.0'
     androidTestImplementation 'androidx.room:room-testing:2.8.5'
     androidTestImplementation 'androidx.test:core:1.7.0'
+    androidTestImplementation 'androidx.test:rules:1.7.0'
+    androidTestImplementation 'androidx.work:work-testing:2.12.0'
     androidTestImplementation 'androidx.test.uiautomator:uiautomator:2.4.0'
     androidTestImplementation 'androidx.arch.core:core-testing:2.2.0'
 }

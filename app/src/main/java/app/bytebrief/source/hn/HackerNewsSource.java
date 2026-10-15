@@ -180,7 +180,7 @@ public class HackerNewsSource {
             JSONObject meta = new JSONObject();
             meta.put("hn_id", id);
             meta.put("discussion_url", hnUrl);
-            meta.put("list", feed.name().toLowerCase());
+            meta.put("list", feed.name().toLowerCase(java.util.Locale.ROOT));
             meta.put("has_external_link", hasLink);
             item.metadataJson = meta.toString();
         } catch (JSONException ignored) {
