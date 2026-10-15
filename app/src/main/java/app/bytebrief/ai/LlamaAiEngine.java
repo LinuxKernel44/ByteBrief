@@ -199,6 +199,42 @@ public final class LlamaAiEngine implements LocalAiEngine {
     }
 
     @Override
+    public CompletableFuture<AiResult<Benchmark>> benchmark() {
+        CompletableFuture<AiResult<Benchmark>> f = new CompletableFuture<>();
+        if (!isReady()) {
+            f.complete(AiResult.failure(AiResult.Status.MODEL_UNAVAILABLE, "Load a model first"));
+            return f;
+        }
+        executor.execute(() -> {
+            LlamaGenerator g = generator;
+            if (g == null) {
+                f.complete(AiResult.failure(AiResult.Status.MODEL_UNAVAILABLE, "The model was unloaded"));
+                return;
+            }
+            running = g;
+            try {
+                String text = "Explain how a lock-free queue works, in plain words. ".repeat(24);
+                String prompt = g.formatChat("You are a helpful assistant.", text);
+                int promptTokens = g.countTokens(prompt);
+                long t0 = System.nanoTime();
+                g.generate(prompt, 1, 0f, null, null);
+                double prefillSeconds = (System.nanoTime() - t0) / 1e9;
+                long t1 = System.nanoTime();
+                TextGenerator.Generation gen = g.generate(prompt, 49, 0f, null, null);
+                double totalSeconds = (System.nanoTime() - t1) / 1e9;
+                double decodeSeconds = Math.max(1e-3, totalSeconds - prefillSeconds);
+                f.complete(AiResult.success(new Benchmark(promptTokens / Math.max(1e-3, prefillSeconds),
+                        Math.max(0, gen.tokens - 1) / decodeSeconds, promptTokens, threads)));
+            } catch (TextGenerator.GenerationException e) {
+                f.complete(AiResult.failure(AiResult.Status.ERROR, e.getMessage()));
+            } finally {
+                running = null;
+            }
+        });
+        return f;
+    }
+
+    @Override
     public CompletableFuture<Void> releaseResources() {
         CompletableFuture<Void> f = new CompletableFuture<>();
         setState(State.UNLOADED); // new operations are refused immediately

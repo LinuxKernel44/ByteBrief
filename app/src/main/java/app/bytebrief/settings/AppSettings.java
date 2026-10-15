@@ -202,6 +202,23 @@ public class AppSettings implements SyncConfig {
 
     // ---- appearance ------------------------------------------------------------------------
 
+    /** Load thumbnails from article hosts. Off means no third-party image requests at all. */
+    public boolean showImages() {
+        return prefs.getBoolean("show_images", true);
+    }
+
+    public void setShowImages(boolean v) {
+        prefs.edit().putBoolean("show_images", v).apply();
+    }
+
+    public boolean onboardingDone() {
+        return prefs.getBoolean("onboarding_done", false);
+    }
+
+    public void setOnboardingDone(boolean v) {
+        prefs.edit().putBoolean("onboarding_done", v).apply();
+    }
+
     /** User override to use opaque surfaces instead of Liquid Glass. */
     public boolean opaqueSurfaces() {
         return prefs.getBoolean("opaque_surfaces", false);

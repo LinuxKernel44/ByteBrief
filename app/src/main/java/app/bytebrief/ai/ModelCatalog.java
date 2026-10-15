@@ -22,7 +22,7 @@ public final class ModelCatalog {
                     "https://huggingface.co/unsloth/Qwen3-4B-Instruct-2507-GGUF/resolve/main/Qwen3-4B-Instruct-2507-Q4_0.gguf",
                     "Apache-2.0", "https://www.apache.org/licenses/LICENSE-2.0",
                     "https://huggingface.co/unsloth/Qwen3-4B-Instruct-2507-GGUF", 4096, 8192,
-                    "Recommended for phones with 12 GB of RAM or more. Best quality of the built-in models; "
+                    "Recommended for phones with 8 GB of RAM or more. Best quality of the built-in models; "
                             + "slower than the light model. Non-thinking instruct variant."),
             new ModelDescriptor(
                     LIGHT_ID, "Qwen2.5 1.5B Instruct", "Qwen Team (Alibaba Cloud)",

@@ -22,6 +22,21 @@ import app.bytebrief.ai.model.Takeaways;
  * a network service.
  */
 public interface LocalAiEngine {
+    /** Measured throughput in tokens per second; results depend on device, thermal state and model. */
+    final class Benchmark {
+        public final double prefillTokensPerSecond;
+        public final double decodeTokensPerSecond;
+        public final int promptTokens;
+        public final int threads;
+
+        public Benchmark(double prefill, double decode, int promptTokens, int threads) {
+            this.prefillTokensPerSecond = prefill;
+            this.decodeTokensPerSecond = decode;
+            this.promptTokens = promptTokens;
+            this.threads = threads;
+        }
+    }
+
     enum State { UNLOADED, LOADING, READY, FAILED }
 
     /**
@@ -50,6 +65,9 @@ public interface LocalAiEngine {
 
     /** @param candidates pre-selected items in rank order; the model only explains them, it never selects. */
     AiTask<DailyBriefing> generateDailyBriefing(List<BriefingCandidate> candidates, AiProgressListener listener);
+
+    /** Measures prompt-processing and generation speed with the loaded model on this device. */
+    CompletableFuture<AiResult<Benchmark>> benchmark();
 
     /** Stops the running operation (if any) and frees the model and its memory. */
     CompletableFuture<Void> releaseResources();

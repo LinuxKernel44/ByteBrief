@@ -60,16 +60,29 @@ public final class AiService {
     }
 
     public AiCall<Summary> summarize(long itemId, boolean force, AiProgressListener l) {
-        return cached(itemId, AiOutput.KIND_SUMMARY, force, in -> engine.summarizeArticle(in, l), Summary::toJson, Summary::fromJson);
+        return cached(itemId, AiOutput.KIND_SUMMARY, force, true, in -> engine.summarizeArticle(in, l), Summary::toJson, Summary::fromJson);
     }
 
     public AiCall<Takeaways> takeaways(long itemId, boolean force, AiProgressListener l) {
-        return cached(itemId, AiOutput.KIND_TAKEAWAYS, force, in -> engine.extractKeyTakeaways(in, l), Takeaways::toJson, Takeaways::fromJson);
+        return cached(itemId, AiOutput.KIND_TAKEAWAYS, force, true, in -> engine.extractKeyTakeaways(in, l), Takeaways::toJson, Takeaways::fromJson);
     }
 
     public AiCall<Explanation> explain(long itemId, ExplainLevel level, boolean force, AiProgressListener l) {
-        return cached(itemId, AiOutput.KIND_EXPLAIN_PREFIX + level.code, force,
+        return cached(itemId, AiOutput.KIND_EXPLAIN_PREFIX + level.code, force, true,
                 in -> engine.explainTechnicalContent(in, level, l), Explanation::toJson, Explanation::fromJson);
+    }
+
+    /** Stored summary only; never runs the model. Completes with NOT_CACHED when nothing valid is stored. */
+    public AiCall<Summary> peekSummary(long itemId) {
+        return cached(itemId, AiOutput.KIND_SUMMARY, false, false, in -> null, Summary::toJson, Summary::fromJson);
+    }
+
+    public AiCall<Takeaways> peekTakeaways(long itemId) {
+        return cached(itemId, AiOutput.KIND_TAKEAWAYS, false, false, in -> null, Takeaways::toJson, Takeaways::fromJson);
+    }
+
+    public AiCall<Explanation> peekExplain(long itemId, ExplainLevel level) {
+        return cached(itemId, AiOutput.KIND_EXPLAIN_PREFIX + level.code, false, false, in -> null, Explanation::toJson, Explanation::fromJson);
     }
 
     /** Questions are not cached. With {@code includeDiscussion} the top Hacker News comments are fetched first. */
@@ -102,7 +115,7 @@ public final class AiService {
         return call;
     }
 
-    private <T> AiCall<T> cached(long itemId, String kind, boolean force, Run<T> start, Ser<T> ser, De<T> de) {
+    private <T> AiCall<T> cached(long itemId, String kind, boolean force, boolean runIfMissing, Run<T> start, Ser<T> ser, De<T> de) {
         AiCall<T> call = new AiCall<>();
         io.execute(() -> {
             try {
@@ -124,6 +137,10 @@ public final class AiService {
                             // Unreadable cache entry: fall through and regenerate.
                         }
                     }
+                }
+                if (!runIfMissing) {
+                    call.complete(outcome(AiResult.failure(AiResult.Status.NOT_CACHED, "Nothing generated yet"), false, false, null));
+                    return;
                 }
                 if (!engine.isReady()) {
                     call.complete(outcome(unavailable(), false, false, null));

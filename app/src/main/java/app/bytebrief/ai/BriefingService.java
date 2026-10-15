@@ -146,7 +146,16 @@ public final class BriefingService {
         return ContentHasher.sha256Hex(String.join("|", parts)).substring(0, 32);
     }
 
+    /** Cached briefing if one exists, otherwise the deterministic selection; never runs the model. */
+    public AiCall<View> preview() {
+        return generate(false, AiProgressListener.NONE, false);
+    }
+
     public AiCall<View> generate(boolean force, AiProgressListener listener) {
+        return generate(force, listener, true);
+    }
+
+    private AiCall<View> generate(boolean force, AiProgressListener listener, boolean allowModel) {
         AiCall<View> call = new AiCall<>();
         io.execute(() -> {
             try {
@@ -173,9 +182,10 @@ public final class BriefingService {
                         }
                     }
                 }
-                if (!engine.isReady()) {
+                if (!allowModel || !engine.isReady()) {
                     call.complete(done(AiResult.success(compose(date, selection, null,
-                            "Load a language model to add a short \"why it matters\" to each item.", clock.millis()))));
+                            engine.isReady() ? "Tap Generate to add a short \"why it matters\" to each item with your local model."
+                                    : "Load a language model to add a short \"why it matters\" to each item.", clock.millis()))));
                     return;
                 }
                 List<BriefingCandidate> candidates = new ArrayList<>();

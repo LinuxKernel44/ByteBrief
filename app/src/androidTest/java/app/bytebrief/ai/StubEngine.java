@@ -83,5 +83,7 @@ final class StubEngine implements LocalAiEngine {
         return done(briefing.get());
     }
 
+    @Override public CompletableFuture<AiResult<Benchmark>> benchmark() { return CompletableFuture.completedFuture(AiResult.success(new Benchmark(1, 1, 1, 1))); }
+
     @Override public CompletableFuture<Void> releaseResources() { ready = false; active = null; return CompletableFuture.completedFuture(null); }
 }

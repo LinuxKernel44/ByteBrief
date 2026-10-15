@@ -21,6 +21,8 @@ public final class AiResult<T> {
         OUT_OF_MEMORY,
         /** The source text is too short to analyze; the model was not asked. */
         INSUFFICIENT_CONTENT,
+        /** A cache-only lookup found nothing stored; no inference was attempted. */
+        NOT_CACHED,
         /** Any other runtime failure. */
         ERROR
     }

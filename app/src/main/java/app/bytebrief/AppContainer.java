@@ -69,6 +69,7 @@ public final class AppContainer {
     public final FeedRepository feeds;
     public final Notifier notifier;
     public final Scheduler scheduler;
+    public final app.bytebrief.ui.images.ImageLoader images;
 
     AppContainer(Context app) {
         this.context = app;
@@ -91,6 +92,7 @@ public final class AppContainer {
         articles = new ArticleLoader(db, http, github, clock);
         scheduler = new Scheduler(app, settings);
         notifier = new Notifier(app);
+        images = new app.bytebrief.ui.images.ImageLoader(settings::showImages);
         ai = new AiService(db, engine, io, clock, item -> {
             // Only Hacker News items have a discussion we can fetch.
             List<String> out = new ArrayList<>();
