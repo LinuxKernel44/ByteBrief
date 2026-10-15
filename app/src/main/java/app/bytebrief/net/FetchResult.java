@@ -16,9 +16,13 @@ public final class FetchResult {
     public final String finalUrl;
     /** GitHub-style quota, or -1 when the server did not report one. */
     public final int rateLimitRemaining;
+    /** Media type without parameters, lower-case (e.g. "text/html"), or null when absent. */
+    @Nullable
+    public final String contentType;
 
     public FetchResult(int code, @Nullable String body, @Nullable String etag, @Nullable String lastModified,
-                       String finalUrl, int rateLimitRemaining) {
+                       String finalUrl, int rateLimitRemaining, @Nullable String contentType) {
+        this.contentType = contentType;
         this.code = code;
         this.body = body;
         this.etag = etag;

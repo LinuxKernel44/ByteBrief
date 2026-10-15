@@ -57,7 +57,7 @@ public class HttpFetcher {
             int remaining = parseInt(response.header("x-ratelimit-remaining"), -1);
             if (code == 304) {
                 return new FetchResult(304, null, response.header("ETag"), response.header("Last-Modified"),
-                        response.request().url().toString(), remaining);
+                        response.request().url().toString(), remaining, null);
             }
             if (code == 429 || (code == 403 && remaining == 0)) {
                 throw new SourceException(SourceException.Kind.RATE_LIMITED, "Rate limited by server (HTTP " + code + ")",
@@ -68,8 +68,10 @@ public class HttpFetcher {
             }
             ResponseBody body = response.body();
             String text = readLimited(body, maxBytes);
+            MediaType mt = body == null ? null : body.contentType();
+            String type = mt == null ? null : (mt.type() + "/" + mt.subtype()).toLowerCase(java.util.Locale.ROOT);
             return new FetchResult(code, text, response.header("ETag"), response.header("Last-Modified"),
-                    response.request().url().toString(), remaining);
+                    response.request().url().toString(), remaining, type);
         } catch (SourceException e) {
             throw e;
         } catch (IOException e) {
