@@ -1,8 +1,14 @@
 name: Release
 
+# Manual on purpose: it needs the signing secrets (KEYSTORE_BASE64, STORE_PASSWORD, KEY_ALIAS, KEY_PASSWORD) to be
+# configured first. Run it from the Actions tab and enter the tag to create, for example v0.2.0.
 on:
-  push:
-    tags: ['v*']
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Release tag to create (for example v0.2.0)'
+        required: true
+        type: string
 
 permissions:
   contents: write
@@ -50,8 +56,9 @@ jobs:
       - name: Checksums and release
         env:
           GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ inputs.tag }}
         run: |
           cd app/build/outputs/apk/release
-          for f in app-*-release.apk; do mv "$f" "bytebrief-${GITHUB_REF_NAME}-${f#app-}"; done
+          for f in app-*-release.apk; do mv "$f" "bytebrief-${RELEASE_TAG}-${f#app-}"; done
           sha256sum bytebrief-*.apk > SHA256SUMS
-          gh release create "$GITHUB_REF_NAME" bytebrief-*.apk SHA256SUMS --title "ByteBrief $GITHUB_REF_NAME" --generate-notes
+          gh release create "$RELEASE_TAG" bytebrief-*.apk SHA256SUMS --title "ByteBrief $RELEASE_TAG" --generate-notes
