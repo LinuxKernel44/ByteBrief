@@ -21,7 +21,7 @@ android {
         }
     }
     sourceSets {
-        androidTest.assets.srcDirs += "$projectDir/schemas".toString()
+        androidTest.assets.srcDirs += ["$projectDir/schemas".toString(), "$projectDir/src/test/resources".toString()]
     }
     compileOptions {
         sourceCompatibility JavaVersion.VERSION_17
@@ -60,6 +60,7 @@ dependencies {
     testImplementation 'org.json:json:20260814'
 
     androidTestImplementation 'androidx.test.ext:junit:1.3.0'
+    androidTestImplementation 'com.squareup.okhttp3:mockwebserver:5.5.0'
     androidTestImplementation 'androidx.test:runner:1.7.0'
     androidTestImplementation 'androidx.room:room-testing:2.8.5'
     androidTestImplementation 'androidx.test:core:1.7.0'
