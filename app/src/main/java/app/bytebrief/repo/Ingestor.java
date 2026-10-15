@@ -1,5 +1,8 @@
 package app.bytebrief.repo;
 
+import org.json.JSONException;
+import org.json.JSONObject;
+
 import java.time.Clock;
 import java.util.List;
 import java.util.Objects;
@@ -9,6 +12,7 @@ import app.bytebrief.data.db.ContentDao;
 import app.bytebrief.data.db.ContentItem;
 import app.bytebrief.domain.AiStatus;
 import app.bytebrief.domain.ItemFactory;
+import app.bytebrief.domain.Topics;
 
 /**
  * Writes collected items to the database. Ingestion is idempotent: an item is identified by
@@ -75,18 +79,46 @@ public class Ingestor {
         incoming.updatedAt = existing.updatedAt;
         // Sources without dates fall back to "now"; keeping the earliest date stops items bouncing upward.
         incoming.publishedAt = Math.min(existing.publishedAt, incoming.publishedAt);
-        if (existing.bodyState > incoming.bodyState) {
+        // Never replace stored text with something poorer or absent (e.g. a README with a bare trending row).
+        if (existing.bodyState > incoming.bodyState || (incoming.bodyText == null && existing.bodyText != null)) {
             incoming.bodyText = existing.bodyText;
             incoming.bodyState = existing.bodyState;
         }
         if (incoming.description == null) incoming.description = existing.description;
-        if (incoming.topics == null) incoming.topics = existing.topics;
+        incoming.topics = unionTopics(existing.topics, incoming.topics);
+        incoming.metadataJson = mergeJson(existing.metadataJson, incoming.metadataJson);
         if (incoming.imageUrl == null) incoming.imageUrl = existing.imageUrl;
         if (incoming.language == null) incoming.language = existing.language;
         if (incoming.feedId == null) incoming.feedId = existing.feedId;
         ItemFactory.refreshHash(incoming);
         // Generated output describes the old text; only keep its status while the text is unchanged.
         incoming.aiStatus = incoming.contentHash.equals(existing.contentHash) ? existing.aiStatus : AiStatus.NONE;
+    }
+
+    /** Existing topics first, then new ones; keeps enrichment results when a later fetch is less detailed. */
+    static String unionTopics(String existing, String incoming) {
+        if (existing == null) return incoming;
+        if (incoming == null) return existing;
+        java.util.List<String> all = new java.util.ArrayList<>(java.util.Arrays.asList(Topics.split(existing)));
+        all.addAll(java.util.Arrays.asList(Topics.split(incoming)));
+        return Topics.join(all);
+    }
+
+    /** Key-wise union of two JSON objects; values from {@code incoming} win. Returns {@code incoming} if either is unreadable. */
+    static String mergeJson(String existing, String incoming) {
+        if (existing == null) return incoming;
+        if (incoming == null) return existing;
+        try {
+            JSONObject merged = new JSONObject(existing);
+            JSONObject in = new JSONObject(incoming);
+            for (java.util.Iterator<String> it = in.keys(); it.hasNext(); ) {
+                String k = it.next();
+                merged.put(k, in.get(k));
+            }
+            return merged.toString();
+        } catch (JSONException e) {
+            return incoming;
+        }
     }
 
     static boolean sameContent(ContentItem a, ContentItem b) {

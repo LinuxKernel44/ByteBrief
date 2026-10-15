@@ -55,7 +55,7 @@ public class GithubSourcesTest {
     }
 
     private TrendingSource trending() {
-        return new TrendingSource(Fixtures.fetcher(), api, Fixtures.factory(), base + "/trending");
+        return new TrendingSource(Fixtures.fetcher(), api, Fixtures.factory(), base + "/trending", Fixtures.CLOCK);
     }
 
     @Test

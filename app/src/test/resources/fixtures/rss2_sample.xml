@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0" xmlns:content="http://purl.org/rss/1.0/modules/content/" xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:media="http://search.yahoo.com/mrss/">
+  <channel>
+    <title>Example Engineering Blog</title>
+    <link>https://blog.example.com/</link>
+    <description>Posts</description>
+    <image><title>Logo title must not become the feed title</title><url>https://blog.example.com/logo.png</url><link>https://blog.example.com/</link></image>
+    <item>
+      <title><![CDATA[Building a <b>fast</b> parser]]></title>
+      <link>https://blog.example.com/posts/fast-parser?utm_source=rss&amp;id=7</link>
+      <guid isPermaLink="false">post-7</guid>
+      <pubDate>Tue, 13 Oct 2026 09:30:00 GMT</pubDate>
+      <dc:creator>Ada Lovelace</dc:creator>
+      <category>Parsing</category>
+      <category>Performance</category>
+      <description><![CDATA[<p>A short teaser about parsers.</p>]]></description>
+      <content:encoded><![CDATA[<p>Full article body about parsing.</p><p>Second paragraph.</p><img src="/img/hero.png"><script>alert(1)</script>]]></content:encoded>
+      <media:thumbnail url="https://cdn.example.com/thumb.jpg"/>
+    </item>
+    <item>
+      <title>Relative link post</title>
+      <link>/posts/relative</link>
+      <description>Only a summary here.</description>
+      <pubDate>13 Oct 2026 10:00:00 +0200</pubDate>
+      <enclosure url="https://cdn.example.com/cover.png" type="image/png" length="1234"/>
+      <author>editor@example.com (The Editor)</author>
+    </item>
+    <item>
+      <title>No link and no guid</title>
+      <description>Cannot be opened, must be skipped.</description>
+    </item>
+    <item>
+      <title>Unsafe link</title>
+      <link>javascript:alert(1)</link>
+      <guid>javascript:alert(1)</guid>
+    </item>
+    <item>
+      <title>Guid is the permalink</title>
+      <guid isPermaLink="true">https://blog.example.com/posts/by-guid</guid>
+      <pubDate>garbage date</pubDate>
+    </item>
+  </channel>
+</rss>

@@ -43,8 +43,10 @@ public class TrendingSource {
     private final GithubApi api;
     private final ItemFactory factory;
     private final String pageUrl;
+    private final java.time.Clock clock;
 
-    public TrendingSource(HttpFetcher http, GithubApi api, ItemFactory factory, String pageUrl) {
+    public TrendingSource(HttpFetcher http, GithubApi api, ItemFactory factory, String pageUrl, java.time.Clock clock) {
+        this.clock = clock;
         this.http = http;
         this.api = api;
         this.factory = factory;
@@ -132,6 +134,8 @@ public class TrendingSource {
                     item.bodyState = truncated ? BodyState.SNIPPET : BodyState.FULL;
                     meta.put("readme_truncated", truncated);
                 }
+                // Recorded even when no README exists so the item is not re-enriched on every sync.
+                meta.put("enriched_at", clock.millis());
                 item.metadataJson = meta.toString();
                 ItemFactory.refreshHash(item);
                 done++;

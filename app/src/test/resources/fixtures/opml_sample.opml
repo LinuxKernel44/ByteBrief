@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<opml version="2.0"><head><title>Subscriptions</title></head><body>
+  <outline text="Tech" title="Tech">
+    <outline type="rss" text="Blog A" title="Blog A" xmlUrl="http://a.example.com/feed" htmlUrl="https://a.example.com"/>
+    <outline type="rss" text="Blog B &amp; Co" xmlUrl="https://b.example.com/rss.xml"/>
+    <outline type="rss" text="Dupe of A" xmlUrl="https://a.example.com/feed"/>
+  </outline>
+  <outline type="rss" text="Evil" xmlUrl="file:///etc/passwd"/>
+  <outline type="rss" text="Evil2" xmlUrl="javascript:alert(1)"/>
+  <outline type="rss" text="NoUrl"/>
+</body></opml>
