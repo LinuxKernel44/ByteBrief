@@ -112,15 +112,25 @@ public final class BriefingService {
         }
         RankingContext ctx = personalizer.buildContext();
         List<RankedItem> ranked = Ranker.rank(pool, ctx, pool.size());
+        // First pass keeps the briefing varied (a per-source cap); the second fills any empty slots with the
+        // best remaining items, so a cap never leaves the list short when few sources are active.
         List<RankedItem> picked = new ArrayList<>();
+        List<RankedItem> skipped = new ArrayList<>();
         Map<String, Integer> perSource = new HashMap<>();
         for (RankedItem r : ranked) {
             String key = Ranker.sourceKey(r.entry.item);
-            if (perSource.getOrDefault(key, 0) >= MAX_PER_SOURCE) continue;
-            perSource.merge(key, 1, Integer::sum);
-            picked.add(r);
-            if (picked.size() >= MAX_ITEMS) break;
+            if (picked.size() < MAX_ITEMS && perSource.getOrDefault(key, 0) < MAX_PER_SOURCE) {
+                perSource.merge(key, 1, Integer::sum);
+                picked.add(r);
+            } else {
+                skipped.add(r);
+            }
         }
+        for (RankedItem r : skipped) {
+            if (picked.size() >= MAX_ITEMS) break;
+            picked.add(r);
+        }
+        picked.sort(java.util.Comparator.comparingInt(ranked::indexOf));
         return picked;
     }
 

@@ -60,6 +60,18 @@ public interface ContentDao {
             + " AND ci.published_at >= :since ORDER BY ci.published_at DESC LIMIT :limit")
     List<ContentListItem> candidates(long since, int limit);
 
+    /** Live candidate pool for ranking (one representative per dedup group). */
+    @Query("SELECT ci.*, " + GROUP_SIZE + " FROM content_items ci WHERE " + REPRESENTATIVE
+            + " AND ci.published_at >= :since ORDER BY ci.published_at DESC LIMIT :limit")
+    LiveData<List<ContentListItem>> observeCandidates(long since, int limit);
+
+    @Query("SELECT ci.*, " + GROUP_SIZE + " FROM content_items ci WHERE ci.is_bookmarked = 1 "
+            + "ORDER BY ci.updated_at DESC LIMIT :limit")
+    LiveData<List<ContentListItem>> observeBookmarks(int limit);
+
+    @Query("SELECT COUNT(*) FROM content_items WHERE is_read = 0")
+    LiveData<Integer> observeUnreadCount();
+
     @Query("SELECT DISTINCT language FROM content_items WHERE language IS NOT NULL ORDER BY language")
     LiveData<List<String>> observeLanguages();
 
@@ -82,6 +94,11 @@ public interface ContentDao {
     /** Retention: drops old items unless the user bookmarked them. */
     @Query("DELETE FROM content_items WHERE published_at < :before AND is_bookmarked = 0")
     int deleteOlderThan(long before);
+
+    /** Recently collected releases, newest first (for notifications). */
+    @Query("SELECT * FROM content_items WHERE source_type = 'gh_release' AND retrieved_at >= :since "
+            + "ORDER BY published_at DESC LIMIT :limit")
+    List<ContentItem> getReleasesRetrievedSince(long since, int limit);
 
     @Query("SELECT COUNT(*) FROM content_items")
     int count();

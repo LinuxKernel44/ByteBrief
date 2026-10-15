@@ -34,6 +34,7 @@ public class PersonalizerTest {
         @Override public void upsert(Affinity a) { rows.put(k(a.kind, a.key), a); writes++; }
         @Override public Affinity find(String kind, String key) { return rows.get(k(kind, key)); }
         @Override public List<Affinity> getAll() { return new ArrayList<>(rows.values()); }
+        @Override public LiveData<List<Affinity>> observeAll() { return null; }
         @Override public LiveData<List<Affinity>> observeExplicitTopics() { return null; }
         @Override public void deleteExplicit(String kind, String key) {
             Affinity a = rows.get(k(kind, key));

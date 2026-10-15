@@ -19,6 +19,9 @@ public interface AffinityDao {
     @Query("SELECT * FROM affinities")
     List<Affinity> getAll();
 
+    @Query("SELECT * FROM affinities")
+    LiveData<List<Affinity>> observeAll();
+
     @Query("SELECT * FROM affinities WHERE explicit = 1 AND kind = 'topic' ORDER BY `key`")
     LiveData<List<Affinity>> observeExplicitTopics();
 

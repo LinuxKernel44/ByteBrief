@@ -122,6 +122,23 @@ public class AppSettings implements SyncConfig {
 
     // ---- background sync -------------------------------------------------------------------
 
+    public long lastSyncAt() {
+        return prefs.getLong("last_sync_at", 0);
+    }
+
+    public void setLastSyncAt(long epochMillis) {
+        prefs.edit().putLong("last_sync_at", epochMillis).apply();
+    }
+
+    /** Save the full text of bookmarked items for offline reading (uses data when a bookmark is added). */
+    public boolean cacheBookmarkedText() {
+        return prefs.getBoolean("cache_bookmarked_text", true);
+    }
+
+    public void setCacheBookmarkedText(boolean v) {
+        prefs.edit().putBoolean("cache_bookmarked_text", v).apply();
+    }
+
     public int syncIntervalHours() {
         return clamp(prefs.getInt("sync_interval_hours", 6), 1, 48);
     }
