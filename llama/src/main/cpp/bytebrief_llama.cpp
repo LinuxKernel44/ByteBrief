@@ -297,7 +297,7 @@ Java_app_bytebrief_llama_LlamaNative_countTokens(JNIEnv * env, jclass, jlong mod
 JNIEXPORT jint JNICALL
 Java_app_bytebrief_llama_LlamaNative_generate(JNIEnv * env, jclass, jlong handle, jbyteArray jprompt,
                                               jint max_tokens, jfloat temperature, jfloat top_p, jint seed,
-                                              jobject listener) {
+                                              jbyteArray jgrammar, jobject listener) {
     auto * session = reinterpret_cast<Session *>(handle);
     session->cancel.store(false);
 
@@ -336,6 +336,17 @@ Java_app_bytebrief_llama_LlamaNative_generate(JNIEnv * env, jclass, jlong handle
     }
 
     llama_sampler * sampler = llama_sampler_chain_init(llama_sampler_chain_default_params());
+    if (jgrammar != nullptr) {
+        // The grammar goes first so every later sampler only sees tokens that keep the output valid.
+        const std::string grammar = to_string(env, jgrammar);
+        llama_sampler * g = llama_sampler_init_grammar(vocab, grammar.c_str(), "root");
+        if (g == nullptr) {
+            llama_sampler_free(sampler);
+            throw_llama(env, kCodeGeneric, "Grammar could not be parsed");
+            return 0;
+        }
+        llama_sampler_chain_add(sampler, g);
+    }
     if (temperature <= 0.0f) {
         llama_sampler_chain_add(sampler, llama_sampler_init_greedy());
     } else {

@@ -47,11 +47,13 @@ public final class LlamaNative {
      * Runs one stateless completion: clears the KV cache, decodes {@code prompt}, then samples
      * until EOS, {@code maxTokens}, listener refusal or {@link #cancel}.
      *
+     * @param grammar optional GBNF grammar (UTF-8) with a {@code root} rule that constrains the output
      * @return number of generated tokens
      * @throws LlamaException CODE_CONTEXT_OVERFLOW if the prompt plus {@code maxTokens} exceeds the context
      */
     public static native int generate(long session, byte[] prompt, int maxTokens, float temperature,
-                                      float topP, int seed, PieceListener listener);
+                                      float topP, int seed, byte[] grammar,
+                                      PieceListener listener);
 
     /** Requests the running {@link #generate} to stop. Safe to call from any thread. */
     public static native void cancel(long session);
