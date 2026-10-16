@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.1.2 — new icon
 
 * New app icon: a glass AI chip with a star, as adaptive, monochrome (themed) and status-bar icons.
 
