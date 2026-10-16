@@ -56,7 +56,7 @@ private fun SyncBanner(status: ContentRepository.SyncStatus?) {
     val text = when {
         status?.running == true -> "Refreshing sources…"
         failed.isNotEmpty() -> "Some sources couldn't be refreshed: " + failed.mapNotNull { it.error }.firstOrNull().orEmpty()
-        status != null && status.lastSyncAt > 0 -> "Updated ${Format.relativeTime(status.lastSyncAt)} ago"
+        status != null && status.lastSyncAt > 0 -> "Updated ${Format.ago(status.lastSyncAt)}"
         else -> null
     } ?: return
     val color = if (failed.isNotEmpty() && status?.running != true) BB.Warm else BB.TextTertiary

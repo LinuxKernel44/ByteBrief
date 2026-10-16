@@ -139,7 +139,7 @@ private fun Header(item: ContentItem) {
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             Icon(style.icon, style.color, size = 16.dp, stroke = 2.2f)
             Txt(item.sourceLabel?.takeIf { item.sourceType == "rss" } ?: style.label, style = BBType.Caption, color = style.color, maxLines = 1)
-            Txt("· ${Format.relativeTime(item.publishedAt)} ago", style = BBType.Caption)
+            Txt("· ${Format.ago(item.publishedAt)}", style = BBType.Caption)
         }
         Txt(item.title, style = BBType.Display.copy(fontSize = 26.sp, lineHeight = 32.sp))
         Row(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.CenterVertically) {

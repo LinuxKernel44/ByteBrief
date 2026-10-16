@@ -15,6 +15,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.compositeOver
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import app.bytebrief.ui.LocalNav
@@ -56,7 +57,7 @@ enum class GlassLevel(val blurDp: Float, val refractionHeightDp: Float, val refr
 fun Modifier.glassSurface(radius: Dp, level: GlassLevel = GlassLevel.Control, tint: Color = BB.GlassTint): Modifier {
     val config = LocalGlassConfig.current
     val backdrop = LocalBackdrop.current
-    if (!config.enabled || backdrop == null) return this.opaqueSurface(radius, tint = BB.Opaque)
+    if (!config.enabled || backdrop == null) return this.opaqueSurface(radius, tint = tint.compositeOver(BB.Opaque))
     // A surface inside the recorded content cannot refract that same content (it would recurse); use the cheap look.
     if (LocalInBackdropSource.current) return this.frostedSurface(radius, tint)
     return this.drawBackdrop(

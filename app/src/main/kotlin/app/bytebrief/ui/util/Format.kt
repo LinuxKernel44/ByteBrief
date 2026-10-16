@@ -17,6 +17,10 @@ object Format {
         }
     }
 
+    /** "just now" or "5m ago"; [relativeTime] alone reads "now", which breaks a trailing "ago". */
+    fun ago(thenMillis: Long, nowMillis: Long = System.currentTimeMillis()): String =
+        relativeTime(thenMillis, nowMillis).let { if (it == "now") "just now" else "$it ago" }
+
     fun count(n: Long): String = when {
         n >= 1_000_000 -> String.format(Locale.US, "%.1fM", n / 1_000_000.0)
         n >= 10_000 -> String.format(Locale.US, "%.0fk", n / 1000.0)

@@ -4,6 +4,8 @@ import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
@@ -39,21 +41,27 @@ import app.bytebrief.ui.components.bottomContentPadding
 import app.bytebrief.ui.components.topContentPadding
 import app.bytebrief.ui.theme.BB
 import app.bytebrief.ui.theme.BBType
+import app.bytebrief.ui.util.Versioned
 import app.bytebrief.ui.util.observeAsState
 import app.bytebrief.ui.viewModelOf
 import app.bytebrief.ui.vm.SettingsViewModel
 
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun SettingsScreen() {
     val vm = viewModelOf<SettingsViewModel>()
     val nav = LocalNav.current
     val requestNotifications = LocalRequestNotifications.current
     val version by vm.version.observeAsState()
-    @Suppress("UNUSED_EXPRESSION") version
     val interests by vm.interests.observeAsState()
-    val s = vm.s()
+    // Keyed on the version so this scope reads (and therefore subscribes to) the counter; the settings object itself is mutable.
+    val s = remember(version) { Versioned(vm.s(), version) }
     var newInterest by remember { mutableStateOf("") }
     var confirmReset by remember { mutableStateOf(false) }
+    var confirmDeleteSummaries by remember { mutableStateOf(false) }
+    // Actions that change stored data rather than a visible switch would otherwise look like dead buttons.
+    var aiNotice by remember { mutableStateOf<String?>(null) }
+    var notice by remember { mutableStateOf<String?>(null) }
 
     GlassScreen(Modifier.fillMaxSize().imePadding(), tabs = false) {
         BackdropSource {
@@ -64,13 +72,13 @@ LazyColumn(
             item { SectionHeader("DAILY BRIEFING") }
             item {
                 Panel {
-                    SwitchRow("Daily briefing notification", "A short digest of what matters, built on your phone at the time you choose.", s.briefingEnabled(), {
+                    SwitchRow("Daily briefing notification", "A short digest of what matters, built on your phone at the time you choose.", s.v.briefingEnabled(), {
                         vm.setBriefing(it)
                         if (it) requestNotifications()
                     })
-                    if (s.briefingEnabled()) {
+                    if (s.v.briefingEnabled()) {
                         Divider()
-                        val m = s.briefingMinuteOfDay()
+                        val m = s.v.briefingMinuteOfDay()
                         Row(Modifier.fillMaxWidth().padding(vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
                             Txt("Time", style = BBType.Body, modifier = Modifier.weight(1f))
                             PlainIconButton(Ic.MINUS, "Earlier by 15 minutes", { vm.setBriefingTime((m - 15 + 1440) % 1440) }, tint = BB.TextPrimary)
@@ -84,7 +92,7 @@ LazyColumn(
                         Txt("The briefing uses your loaded language model if there is one; otherwise it lists your top picks without AI text.", style = BBType.Caption, modifier = Modifier.padding(vertical = 8.dp))
                     }
                     Divider()
-                    SwitchRow("Release alerts", "Notify when a repository you follow publishes a release.", s.releaseAlertsEnabled(), {
+                    SwitchRow("Release alerts", "Notify when a repository you follow publishes a release.", s.v.releaseAlertsEnabled(), {
                         vm.setReleaseAlerts(it)
                         if (it) requestNotifications()
                     })
@@ -94,29 +102,29 @@ LazyColumn(
             item { SectionHeader("SYNC") }
             item {
                 Panel {
-                    SwitchRow("Refresh in the background", "Keeps your feed up to date when the phone has a network.", s.backgroundSyncEnabled(), { vm.setBackgroundSync(it) })
-                    if (s.backgroundSyncEnabled()) {
+                    SwitchRow("Refresh in the background", "Keeps your feed up to date when the phone has a network.", s.v.backgroundSyncEnabled(), { vm.setBackgroundSync(it) })
+                    if (s.v.backgroundSyncEnabled()) {
                         Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()).padding(bottom = 8.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                            for (h in listOf(1, 3, 6, 12, 24)) Chip("Every $h h", s.syncIntervalHours() == h, { vm.setSyncInterval(h) })
+                            for (h in listOf(1, 3, 6, 12, 24)) Chip("Every $h h", s.v.syncIntervalHours() == h, { vm.setSyncInterval(h) })
                         }
-                        SwitchRow("Wi-Fi only", "Skip background refreshes on mobile data.", s.syncOnUnmeteredOnly(), { vm.setUnmeteredOnly(it) })
+                        SwitchRow("Wi-Fi only", "Skip background refreshes on mobile data.", s.v.syncOnUnmeteredOnly(), { vm.setUnmeteredOnly(it) })
                     }
                     Divider()
                     Txt("Keep items for", style = BBType.Body, modifier = Modifier.padding(top = 10.dp))
                     Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()).padding(vertical = 8.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        for (d in listOf(7, 14, 30, 90)) Chip("$d days", s.retentionDays() == d, { vm.setRetention(d) })
+                        for (d in listOf(7, 14, 30, 90)) Chip("$d days", s.v.retentionDays() == d, { vm.setRetention(d) })
                     }
                     Txt("Bookmarked items are always kept.", style = BBType.Caption, modifier = Modifier.padding(bottom = 10.dp))
                     Divider()
-                    SwitchRow("Save full text when bookmarking", "Downloads the article so it can be read offline.", s.cacheBookmarkedText(), { vm.setCacheBookmarks(it) })
-                    SwitchRow("Show images", "Loads thumbnails from the sites that publish them, which tells those sites your IP address.", s.showImages(), { vm.setShowImages(it) })
+                    SwitchRow("Save full text when bookmarking", "Downloads the article so it can be read offline.", s.v.cacheBookmarkedText(), { vm.setCacheBookmarks(it) })
+                    SwitchRow("Show images", "Loads thumbnails from the sites that publish them, which tells those sites your IP address.", s.v.showImages(), { vm.setShowImages(it) })
                 }
             }
 
             item { SectionHeader("PERSONALIZATION") }
             item {
                 Panel {
-                    SwitchRow("Learn from what I read", "Opening, saving and rating items adjust your topics and sources. Stored only on this phone.", s.learningEnabled(), { vm.setLearning(it) })
+                    SwitchRow("Learn from what I read", "Opening, saving and rating items adjust your topics and sources. Stored only on this phone.", s.v.learningEnabled(), { vm.setLearning(it) })
                     Divider()
                     Txt("Topics I follow", style = BBType.Body, modifier = Modifier.padding(top = 10.dp))
                     val list = interests.orEmpty()
@@ -129,10 +137,11 @@ LazyColumn(
                         GlassButton("Add", { vm.addInterest(newInterest); newInterest = "" }, enabled = newInterest.isNotBlank())
                     }
                     Divider()
-                    Row(Modifier.padding(vertical = 10.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        GlassButton("Forget what it learned", { vm.resetLearned() }, icon = Ic.REFRESH)
+                    FlowRow(Modifier.padding(vertical = 10.dp), horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        GlassButton("Forget what it learned", { vm.resetLearned(); notice = "Learned preferences were cleared. Topics you follow are kept." }, icon = Ic.REFRESH)
                         GlassButton("Reset everything", { confirmReset = true }, icon = Ic.TRASH)
                     }
+                    notice?.let { Txt(it, style = BBType.Caption, color = BB.Accent, modifier = Modifier.padding(bottom = 8.dp)) }
                     Txt("Ranking is explained on every item: look for the line that says why it was picked. Total GitHub stars are never used as a quality signal.", style = BBType.Caption, modifier = Modifier.padding(bottom = 10.dp))
                 }
             }
@@ -140,16 +149,17 @@ LazyColumn(
             item { SectionHeader("APPEARANCE") }
             item {
                 Panel {
-                    SwitchRow("Use solid surfaces instead of glass", "Turns off the Liquid Glass effect. It is also off automatically in battery saver.", s.opaqueSurfaces(), { vm.setOpaque(it) })
+                    SwitchRow("Use solid surfaces instead of glass", "Turns off the Liquid Glass effect. It is also off automatically in battery saver.", s.v.opaqueSurfaces(), { vm.setOpaque(it) })
                 }
             }
 
             item { SectionHeader("AI DATA") }
             item {
                 Panel {
-                    SwitchRow("Allow model downloads on mobile data", "Large downloads still ask for confirmation each time.", s.allowMeteredModelDownload(), { vm.setMeteredModelDownload(it) })
+                    SwitchRow("Allow model downloads on mobile data", "Large downloads still ask for confirmation each time.", s.v.allowMeteredModelDownload(), { vm.setMeteredModelDownload(it) })
                     Divider()
-                    Row(Modifier.padding(vertical = 10.dp)) { GlassButton("Delete saved summaries", { vm.clearAiOutputs() }, icon = Ic.TRASH) }
+                    Row(Modifier.padding(vertical = 10.dp)) { GlassButton("Delete saved summaries", { confirmDeleteSummaries = true }, icon = Ic.TRASH) }
+                    aiNotice?.let { Txt(it, style = BBType.Caption, color = BB.Accent, modifier = Modifier.padding(bottom = 8.dp)) }
                 }
             }
             item { GlassButton("About ByteBrief", { nav.push(app.bytebrief.ui.Route.About) }, Modifier.padding(top = 16.dp), icon = Ic.QUESTION) }
@@ -157,6 +167,8 @@ LazyColumn(
 }
         GlassTopBar("Settings", onBack = { nav.pop() })
         if (confirmReset) ConfirmDialog("Reset personalization?", "Forgets everything learned and the topics you follow. Your saved items are not affected.",
-            "Reset", { vm.resetAll(); confirmReset = false }, { confirmReset = false }, danger = true)
+            "Reset", { vm.resetAll(); confirmReset = false; notice = "Personalization was reset." }, { confirmReset = false }, danger = true)
+        if (confirmDeleteSummaries) ConfirmDialog("Delete saved summaries?", "Removes every summary, explanation and answer generated on this phone. They can be generated again.",
+            "Delete", { vm.clearAiOutputs(); confirmDeleteSummaries = false; aiNotice = "Saved summaries were deleted." }, { confirmDeleteSummaries = false }, danger = true)
     }
 }

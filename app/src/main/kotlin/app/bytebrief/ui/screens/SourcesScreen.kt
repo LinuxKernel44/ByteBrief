@@ -48,6 +48,7 @@ import app.bytebrief.ui.components.topContentPadding
 import app.bytebrief.ui.theme.BB
 import app.bytebrief.ui.theme.BBType
 import app.bytebrief.ui.util.Format
+import app.bytebrief.ui.util.Versioned
 import app.bytebrief.ui.util.observeAsState
 import app.bytebrief.ui.viewModelOf
 import app.bytebrief.ui.vm.SourcesViewModel
@@ -65,12 +66,12 @@ fun SourcesScreen() {
     val message by vm.message.observeAsState()
     val busy by vm.busy.observeAsState()
     val version by vm.settingsVersion.observeAsState()
-    @Suppress("UNUSED_EXPRESSION") version
-    val s = vm.settings()
+    // Keyed on the version so this scope reads (and therefore subscribes to) the counter; the settings object itself is mutable.
+    val s = remember(version) { Versioned(vm.settings(), version) }
     var feedUrl by remember { mutableStateOf("") }
     var repoRef by remember { mutableStateOf("") }
     var token by remember { mutableStateOf("") }
-    var language by remember { mutableStateOf(s.trendingLanguage().orEmpty()) }
+    var language by remember { mutableStateOf(s.v.trendingLanguage().orEmpty()) }
 
     val importer = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri: Uri? ->
         if (uri != null) {
@@ -100,27 +101,27 @@ LazyColumn(
             item { SectionHeader("BUILT-IN SOURCES") }
             item {
                 Panel {
-                    SwitchRow("Hacker News", "Stories from the official API", s.isSourceEnabled(SourceType.HACKER_NEWS), { vm.setSourceEnabled(SourceType.HACKER_NEWS, it) })
-                    if (s.isSourceEnabled(SourceType.HACKER_NEWS)) {
+                    SwitchRow("Hacker News", "Stories from the official API", s.v.isSourceEnabled(SourceType.HACKER_NEWS), { vm.setSourceEnabled(SourceType.HACKER_NEWS, it) })
+                    if (s.v.isSourceEnabled(SourceType.HACKER_NEWS)) {
                         Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()).padding(bottom = 10.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                            val on = s.hackerNewsFeeds()
+                            val on = s.v.hackerNewsFeeds()
                             for (f in HackerNewsSource.Feed.entries) Chip(when (f) { HackerNewsSource.Feed.TOP -> "Top"; HackerNewsSource.Feed.NEW -> "New"; HackerNewsSource.Feed.BEST -> "Best"; HackerNewsSource.Feed.SHOW -> "Show HN"; HackerNewsSource.Feed.ASK -> "Ask HN" }, f in on, { vm.toggleHnFeed(f) })
                         }
                     }
                     Divider()
-                    SwitchRow("GitHub Trending", "Read from the public trending page, enriched with the GitHub API", s.isSourceEnabled(SourceType.GITHUB_TRENDING), { vm.setSourceEnabled(SourceType.GITHUB_TRENDING, it) })
-                    if (s.isSourceEnabled(SourceType.GITHUB_TRENDING)) {
+                    SwitchRow("GitHub Trending", "Read from the public trending page, enriched with the GitHub API", s.v.isSourceEnabled(SourceType.GITHUB_TRENDING), { vm.setSourceEnabled(SourceType.GITHUB_TRENDING, it) })
+                    if (s.v.isSourceEnabled(SourceType.GITHUB_TRENDING)) {
                         Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()).padding(bottom = 8.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                            for (p in TrendingSource.Period.entries) Chip(p.name.lowercase().replaceFirstChar { it.uppercase() }, s.trendingPeriod() == p, { vm.setTrendingPeriod(p) })
+                            for (p in TrendingSource.Period.entries) Chip(p.name.lowercase().replaceFirstChar { it.uppercase() }, s.v.trendingPeriod() == p, { vm.setTrendingPeriod(p) })
                         }
                         TextInput(language, { language = it; vm.setTrendingLanguage(it) }, "Language filter, e.g. java or c++ (optional)")
                         Txt("GitHub Trending has no official API, so this reads the page and may break if GitHub changes it.", style = BBType.Caption, modifier = Modifier.padding(vertical = 8.dp))
                     }
                     Divider()
-                    SwitchRow("Releases", "New releases of repositories you follow", s.isSourceEnabled(SourceType.GITHUB_RELEASE), { vm.setSourceEnabled(SourceType.GITHUB_RELEASE, it) })
-                    SwitchRow("Include pre-releases", null, s.includePrereleases(), { vm.setIncludePrereleases(it) })
+                    SwitchRow("Releases", "New releases of repositories you follow", s.v.isSourceEnabled(SourceType.GITHUB_RELEASE), { vm.setSourceEnabled(SourceType.GITHUB_RELEASE, it) })
+                    SwitchRow("Include pre-releases", null, s.v.includePrereleases(), { vm.setIncludePrereleases(it) })
                     Divider()
-                    SwitchRow("RSS and Atom feeds", "Your own feeds, below", s.isSourceEnabled(SourceType.RSS), { vm.setSourceEnabled(SourceType.RSS, it) })
+                    SwitchRow("RSS and Atom feeds", "Your own feeds, below", s.v.isSourceEnabled(SourceType.RSS), { vm.setSourceEnabled(SourceType.RSS, it) })
                 }
             }
 
@@ -153,7 +154,7 @@ LazyColumn(
                                 Txt(
                                     when {
                                         f.lastError != null -> "⚠ ${f.lastError}"
-                                        f.lastFetchedAt > 0 -> "Updated ${Format.relativeTime(f.lastFetchedAt)} ago"
+                                        f.lastFetchedAt > 0 -> "Updated ${Format.ago(f.lastFetchedAt)}"
                                         else -> "Not fetched yet"
                                     },
                                     style = BBType.Caption, color = if (f.lastError != null) BB.Warm else BB.TextTertiary, maxLines = 2, modifier = Modifier.weight(1f),
@@ -179,7 +180,7 @@ LazyColumn(
                         Row(Modifier.padding(vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
                             Column(Modifier.weight(1f)) {
                                 Txt("${r.owner}/${r.name}", style = BBType.Body, maxLines = 1)
-                                Txt(r.lastError?.let { "⚠ $it" } ?: if (r.lastCheckedAt > 0) "Checked ${Format.relativeTime(r.lastCheckedAt)} ago" else "Not checked yet", style = BBType.Caption, color = if (r.lastError != null) BB.Warm else BB.TextTertiary, maxLines = 2)
+                                Txt(r.lastError?.let { "⚠ $it" } ?: if (r.lastCheckedAt > 0) "Checked ${Format.ago(r.lastCheckedAt)}" else "Not checked yet", style = BBType.Caption, color = if (r.lastError != null) BB.Warm else BB.TextTertiary, maxLines = 2)
                             }
                             Chip(if (r.enabled) "On" else "Off", r.enabled, { vm.setRepoEnabled(r, !r.enabled) })
                             PlainIconButton(Ic.TRASH, "Stop following ${r.owner}/${r.name}", { vm.untrack(r) }, tint = BB.Danger)

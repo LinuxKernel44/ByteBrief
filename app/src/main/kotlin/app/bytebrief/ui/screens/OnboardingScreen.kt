@@ -1,6 +1,7 @@
 package app.bytebrief.ui.screens
 
 import androidx.compose.foundation.horizontalScroll
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -11,6 +12,7 @@ import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBars
@@ -59,6 +61,8 @@ fun OnboardingScreen(onDone: () -> Unit) {
     val top = WindowInsets.statusBars.asPaddingValues().calculateTopPadding()
     val bottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
 
+    BackHandler(enabled = step > 0) { step -= 1 }
+
     fun finish(openModels: Boolean) {
         for (t in picked) c.personalizer.let { p -> c.io.execute { p.addInterest(t) } }
         onDone()
@@ -68,7 +72,7 @@ fun OnboardingScreen(onDone: () -> Unit) {
 
     GlassScreen {
     BackdropSource { }
-    Box(Modifier.fillMaxSize().padding(top = top, bottom = bottom, start = 20.dp, end = 20.dp), contentAlignment = Alignment.Center) {
+    Box(Modifier.fillMaxSize().imePadding().padding(top = top, bottom = bottom, start = 20.dp, end = 20.dp), contentAlignment = Alignment.Center) {
         Column(
             Modifier.fillMaxWidth().glassSurface(32.dp, GlassLevel.Sheet, BB.GlassTintStrong).padding(24.dp).verticalScroll(rememberScrollState()),
             verticalArrangement = Arrangement.spacedBy(16.dp),
@@ -88,12 +92,12 @@ fun OnboardingScreen(onDone: () -> Unit) {
                     Txt("What are you into?", style = BBType.Title)
                     Txt("Pick a few topics to start with. You can change them any time in Settings.", style = BBType.BodySecondary)
                     FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                        for (t in SUGGESTED) Chip(t, t in picked, { if (t in picked) picked.remove(t) else picked.add(t) })
+                        for (t in SUGGESTED + picked.filter { it !in SUGGESTED }) Chip(t, t in picked, { if (t in picked) picked.remove(t) else picked.add(t) })
                     }
-                    TextInput(custom, { custom = it }, "Add your own", onSearch = { if (custom.isNotBlank()) { picked.add(custom.trim().lowercase()); custom = "" } })
+                    TextInput(custom, { custom = it }, "Add your own", onSearch = { val v = custom.trim().lowercase(); if (v.isNotEmpty() && v !in picked) picked.add(v); custom = "" })
                     Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                         GlassButton("Back", { step = 0 })
-                        GlassButton("Continue", { if (custom.isNotBlank()) picked.add(custom.trim().lowercase()); step = 2 }, prominent = true)
+                        GlassButton("Continue", { val v = custom.trim().lowercase(); if (v.isNotEmpty() && v !in picked) picked.add(v); custom = ""; step = 2 }, prominent = true)
                     }
                 }
                 else -> {

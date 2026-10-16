@@ -186,4 +186,21 @@ public class UiSmokeTest {
         assertNotNull("briefing rows missing", device.wait(Until.findObject(By.descContains("Smoke test article about parsers")), TIMEOUT));
         assertEquals(false, container.engine.isReady());
     }
+
+    /** Regression: settings items inside a LazyColumn used to keep showing the old state after a tap. */
+    @Test
+    public void settingsScreenReflectsAChangedSwitch() {
+        container.settings.setBackgroundSyncEnabled(true);
+        launch();
+        clickDesc("More");
+        clickWhere(By.descStartsWith("Settings"), "More row Settings");
+        assertNotNull("interval chips should show while background refresh is on", device.wait(Until.findObject(By.text("Every 3 h")), TIMEOUT));
+        clickWhere(By.text("Refresh in the background"), "background refresh switch");
+        assertTrue("interval chips should disappear after switching off",
+                device.wait(Until.gone(By.text("Every 3 h")), TIMEOUT));
+        assertEquals(false, container.settings.backgroundSyncEnabled());
+        clickWhere(By.text("Refresh in the background"), "background refresh switch");
+        assertNotNull("interval chips should come back", device.wait(Until.findObject(By.text("Every 3 h")), TIMEOUT));
+        assertEquals(true, container.settings.backgroundSyncEnabled());
+    }
 }

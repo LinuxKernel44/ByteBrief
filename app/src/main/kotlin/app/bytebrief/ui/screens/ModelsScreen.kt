@@ -5,6 +5,8 @@ import android.net.Uri
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
@@ -102,6 +104,7 @@ LazyColumn(
     }
 }
 
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun ModelCard(vm: ModelsViewModel, m: ModelDescriptor, status: ModelManager.Status?, onMobile: () -> Unit, onDelete: () -> Unit) {
     val context = LocalContext.current
@@ -143,7 +146,7 @@ private fun ModelCard(vm: ModelsViewModel, m: ModelDescriptor, status: ModelMana
             ModelManager.Phase.WAITING_FOR_NETWORK -> {
                 if ((status?.downloadedBytes ?: 0) > 0) ProgressBar((status?.percent() ?: 0) / 100f)
                 Txt("Waiting for Wi-Fi. The download starts automatically and resumes if interrupted.", style = BBType.BodySecondary)
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp), itemVerticalAlignment = Alignment.CenterVertically) {
                     GlassButton("Use mobile data…", onMobile, icon = Ic.DOWNLOAD)
                     GlassButton("Cancel", { vm.pause(m) }, icon = Ic.CLOSE)
                 }
@@ -152,7 +155,7 @@ private fun ModelCard(vm: ModelsViewModel, m: ModelDescriptor, status: ModelMana
             ModelManager.Phase.PAUSED -> {
                 ProgressBar((status?.percent() ?: 0) / 100f)
                 Txt("Paused at ${Format.bytes(status?.downloadedBytes ?: 0)}", style = BBType.Caption)
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp), itemVerticalAlignment = Alignment.CenterVertically) {
                     GlassButton("Resume on Wi-Fi", { vm.download(m) }, icon = Ic.PLAY, prominent = true)
                     GlassButton("Mobile data…", onMobile, icon = Ic.DOWNLOAD)
                     PlainIconButton(Ic.TRASH, "Discard partial download", onDelete, tint = BB.Danger)
@@ -175,7 +178,7 @@ private fun ModelCard(vm: ModelsViewModel, m: ModelDescriptor, status: ModelMana
                 GlassButton("Unload", { vm.unload() }, icon = Ic.PAUSE)
                 PlainIconButton(Ic.TRASH, "Delete ${m.name}", onDelete, tint = BB.Danger)
             }
-            else -> Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            else -> FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp), itemVerticalAlignment = Alignment.CenterVertically) {
                 GlassButton("Download on Wi-Fi", { vm.download(m) }, icon = Ic.DOWNLOAD, prominent = true)
                 GlassButton("Mobile data…", onMobile, icon = Ic.DOWNLOAD)
             }
@@ -193,6 +196,8 @@ private fun Modifier.clickableUrl(context: android.content.Context, url: String)
 @Composable
 fun ConfirmDialog(title: String, body: String, confirm: String, onConfirm: () -> Unit, onDismiss: () -> Unit, danger: Boolean = false) {
     androidx.compose.ui.window.Dialog(onDismissRequest = onDismiss) {
+        // A dialog is its own window: the screen's backdrop would show through translucent controls.
+        androidx.compose.runtime.CompositionLocalProvider(app.bytebrief.ui.glass.LocalBackdrop provides null) {
         Column(Modifier.fillMaxWidth().opaqueSurface(28.dp).padding(20.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
             Txt(title, style = BBType.Title)
             Txt(body, style = BBType.BodySecondary)
@@ -200,6 +205,7 @@ fun ConfirmDialog(title: String, body: String, confirm: String, onConfirm: () ->
                 GlassButton("Cancel", onDismiss)
                 GlassButton(confirm, onConfirm, prominent = !danger)
             }
+        }
         }
     }
 }
