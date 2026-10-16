@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024"><defs><linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#16244A"/><stop offset="1" stop-color="#050912"/></linearGradient>
+<radialGradient id="glowA" cx="0.25" cy="0.2" r="0.7"><stop offset="0" stop-color="#4C8DFF" stop-opacity="0.55"/><stop offset="1" stop-color="#4C8DFF" stop-opacity="0"/></radialGradient>
+<radialGradient id="glowB" cx="0.85" cy="0.9" r="0.6"><stop offset="0" stop-color="#27D3A2" stop-opacity="0.40"/><stop offset="1" stop-color="#27D3A2" stop-opacity="0"/></radialGradient>
+<linearGradient id="glass" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FFFFFF" stop-opacity="0.55"/><stop offset="1" stop-color="#9AD4FF" stop-opacity="0.12"/></linearGradient>
+<linearGradient id="rim" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FFFFFF" stop-opacity="0.95"/><stop offset="1" stop-color="#FFFFFF" stop-opacity="0.15"/></linearGradient>
+<linearGradient id="teal" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#7CF0CF"/><stop offset="1" stop-color="#2A8FE0"/></linearGradient>
+<linearGradient id="pin" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#BFE6FF"/><stop offset="1" stop-color="#5BA4E6"/></linearGradient>
+<filter id="shadow" x="-30%" y="-30%" width="160%" height="170%"><feGaussianBlur stdDeviation="22"/></filter>
+<filter id="glow" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="30"/></filter>
+<radialGradient id="halo" cx="0.5" cy="0.5" r="0.5"><stop offset="0" stop-color="#7CF0CF" stop-opacity="0.85"/><stop offset="1" stop-color="#7CF0CF" stop-opacity="0"/></radialGradient></defs>
+<rect width="1024" height="1024" fill="#04070F"/><circle cx="512" cy="512" r="420" fill="url(#halo)" opacity="0.38"/>
+<g stroke="#7CF0CF" stroke-opacity="0.9" stroke-width="20" stroke-linecap="round">
+<path d="M410 190v90M512 190v90M614 190v90M410 744v90M512 744v90M614 744v90M190 410h90M190 512h90M190 614h90M744 410h90M744 512h90M744 614h90"/></g>
+<rect x="262" y="262" width="500" height="500" rx="112" fill="#0B1530"/>
+<rect x="262" y="262" width="500" height="500" rx="112" fill="url(#glass)" opacity="0.8"/>
+<rect x="262" y="262" width="500" height="500" rx="112" fill="none" stroke="#7CF0CF" stroke-opacity="0.9" stroke-width="7"/>
+<circle cx="512" cy="512" r="170" fill="#7CF0CF" opacity="0.5" filter="url(#glow)"/>
+<path d="M512 352 L560 464 L672 512 L560 560 L512 672 L464 560 L352 512 L464 464Z" fill="#EFFFFA"/>
+<circle cx="318" cy="318" r="14" fill="#7CF0CF"/>
+</svg>

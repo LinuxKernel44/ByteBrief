@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+
+* New app icon: a glass AI chip with a star, as adaptive, monochrome (themed) and status-bar icons.
+
 ## 0.1.1 — settings fix
 
 * Fixed Settings and Sources: switches and chips saved their value but kept showing the old state, so they looked unresponsive.
