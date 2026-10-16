@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.1.1 — settings fix
+
+* Fixed Settings and Sources: switches and chips saved their value but kept showing the old state, so they looked unresponsive.
+* "Forget what it learned" and "Delete saved summaries" now confirm what happened; deleting summaries asks first.
+* Buttons that were truncated or could overflow now wrap; dialog buttons no longer show the screen through them.
+* Onboarding: Back returns to the previous step, content stays above the keyboard, custom topics appear as chips.
+* "Updated now ago" now reads "Updated just now".
+
 ## 0.1.0 — first release
 
 * Sources: Hacker News, GitHub Trending, GitHub Releases, RSS/Atom with OPML.
