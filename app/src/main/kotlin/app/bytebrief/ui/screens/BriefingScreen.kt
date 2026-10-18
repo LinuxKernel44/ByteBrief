@@ -113,7 +113,7 @@ private fun BriefingRow(row: BriefingService.Row, onClick: () -> Unit) {
     ) {
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             Icon(st.icon, st.color, size = 14.dp, stroke = 2.2f)
-            Txt(row.item.sourceLabel?.takeIf { row.item.sourceType == "rss" } ?: st.label, style = BBType.Caption, color = st.color, maxLines = 1, modifier = Modifier.weight(1f, fill = false))
+            Txt(row.item.sourceLabel?.takeIf { (row.item.sourceType == "rss" || row.item.sourceType == "xda") } ?: st.label, style = BBType.Caption, color = st.color, maxLines = 1, modifier = Modifier.weight(1f, fill = false))
             Txt("· ${Format.relativeTime(row.item.publishedAt)}", style = BBType.Caption)
             if (row.groupSize > 1) Badge("+${row.groupSize - 1}", BB.Accent, icon = Ic.LAYERS)
         }

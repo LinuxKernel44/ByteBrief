@@ -91,7 +91,7 @@ fun DetailScreen(id: Long, showBack: Boolean) {
         } else {
             val blocks = remember(it0.bodyText, it0.description, it0.sourceType) {
                 val text = it0.bodyText ?: it0.description ?: ""
-                MarkdownLite.parse(text, markdown = it0.sourceType == "gh_trending" || it0.sourceType == "gh_release")
+                MarkdownLite.parse(text, markdown = it0.sourceType == "gh_trending" || it0.sourceType == "gh_release" || it0.sourceType == "xda")
             }
             BackdropSource {
 LazyColumn(
@@ -100,7 +100,7 @@ LazyColumn(
             ) {
                 item { Header(it0) }
                 item { ActionsRow(it0, vm, onOpen = { openUrl(context, it0.originalUrl) }) }
-                item { OfflineCard(it0, article?.working == true, article?.message, onSave = { vm.saveFullText() }) }
+                item { OfflineCard(it0, article?.working == true, article?.message, onSave = { vm.saveFullText() }, needsVerification = article?.needsVerification == true, onVerify = { nav.push(Route.Verify) }) }
                 val others = group.orEmpty().filter { o -> o.id != it0.id }
                 if (others.isNotEmpty()) item { OtherSources(others, onOpen = { nav.push(Route.Detail(it)) }) }
                 item {
@@ -138,7 +138,7 @@ private fun Header(item: ContentItem) {
     Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             Icon(style.icon, style.color, size = 16.dp, stroke = 2.2f)
-            Txt(item.sourceLabel?.takeIf { item.sourceType == "rss" } ?: style.label, style = BBType.Caption, color = style.color, maxLines = 1)
+            Txt(item.sourceLabel?.takeIf { (item.sourceType == "rss" || item.sourceType == "xda") } ?: style.label, style = BBType.Caption, color = style.color, maxLines = 1)
             Txt("· ${Format.ago(item.publishedAt)}", style = BBType.Caption)
         }
         Txt(item.title, style = BBType.Display.copy(fontSize = 26.sp, lineHeight = 32.sp))
@@ -162,7 +162,7 @@ private fun ActionsRow(item: ContentItem, vm: DetailViewModel, onOpen: () -> Uni
 }
 
 @Composable
-private fun OfflineCard(item: ContentItem, working: Boolean, message: String?, onSave: () -> Unit) {
+private fun OfflineCard(item: ContentItem, working: Boolean, message: String?, onSave: () -> Unit, needsVerification: Boolean = false, onVerify: () -> Unit = {}) {
     Column(Modifier.fillMaxWidth().frostedCard(18.dp).padding(14.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             CacheIndicator(item)
@@ -177,6 +177,7 @@ private fun OfflineCard(item: ContentItem, working: Boolean, message: String?, o
             GlassButton(if (working) "Saving…" else "Save full text", onSave, icon = Ic.DOWNLOAD, enabled = !working)
         }
         if (message != null) Txt(message, style = BBType.Caption, color = BB.TextSecondary)
+        if (needsVerification) GlassButton("Verify", onVerify, icon = Ic.LOCK, prominent = true)
     }
 }
 
@@ -192,7 +193,7 @@ private fun OtherSources(others: List<ContentItem>, onOpen: (Long) -> Unit) {
             Row(Modifier.fillMaxWidth().tappable({ onOpen(o.id) }, "${st.label}: ${o.title}", Role.Button), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                 Icon(st.icon, st.color, size = 16.dp)
                 Column(Modifier.weight(1f)) {
-                    Txt(o.sourceLabel?.takeIf { o.sourceType == "rss" } ?: st.label, style = BBType.Caption, color = st.color, maxLines = 1)
+                    Txt(o.sourceLabel?.takeIf { (o.sourceType == "rss" || o.sourceType == "xda") } ?: st.label, style = BBType.Caption, color = st.color, maxLines = 1)
                     Txt(o.title, style = BBType.Body, maxLines = 2)
                 }
                 Icon(Ic.CHEVRON_RIGHT, BB.TextTertiary, size = 18.dp)

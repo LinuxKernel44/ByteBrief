@@ -48,6 +48,7 @@ fun sourceStyle(code: String): SourceStyle = when (code) {
     "hn" -> SourceStyle("Hacker News", BB.HackerNews, Ic.HN)
     "gh_trending" -> SourceStyle("GitHub Trending", BB.Trending, Ic.FLAME)
     "gh_release" -> SourceStyle("Release", BB.Release, Ic.TAG)
+    "xda" -> SourceStyle("XDA Forums", BB.Forum, Ic.FORUM)
     else -> SourceStyle("RSS", BB.Rss, Ic.RSS)
 }
 
@@ -147,6 +148,7 @@ fun MetaChips(item: ContentItem) {
             val pre = if (m.optBoolean("prerelease")) "  ·  pre-release" else ""
             Txt(m.optString("tag").ifEmpty { "release" } + pre, style = BBType.Caption, maxLines = 1)
         }
+        "xda" -> Txt(listOfNotNull(m.optString("prefix").takeIf { it.isNotEmpty() }, "${item.commentCount} replies", "${Format.count(item.score)} views").joinToString("  ·  "), style = BBType.Caption, maxLines = 1)
         else -> if (!item.author.isNullOrBlank()) Txt(item.author!!, style = BBType.Caption, maxLines = 1)
     }
 }

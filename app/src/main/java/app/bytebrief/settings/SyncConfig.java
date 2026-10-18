@@ -27,4 +27,9 @@ public interface SyncConfig {
 
     /** Max trending repositories to enrich with README/topics per sync (each costs up to 2 API calls). */
     int trendingEnrichBudget();
+
+    /** Forum pages are heavy (a whole web page each); by default they are only loaded on an unmetered network. */
+    default boolean forumsWifiOnly() {
+        return true;
+    }
 }

@@ -182,6 +182,15 @@ public class AppSettings implements SyncConfig {
         prefs.edit().putInt("briefing_minute", clamp(minute, 0, 24 * 60 - 1)).apply();
     }
 
+    @Override
+    public boolean forumsWifiOnly() {
+        return prefs.getBoolean("forums_wifi_only", true);
+    }
+
+    public void setForumsWifiOnly(boolean v) {
+        prefs.edit().putBoolean("forums_wifi_only", v).apply();
+    }
+
     public boolean releaseAlertsEnabled() {
         return prefs.getBoolean("release_alerts", false);
     }

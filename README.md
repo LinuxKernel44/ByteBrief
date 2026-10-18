@@ -21,7 +21,7 @@ No account, no analytics, no cloud inference.
 
 | Area | What you get |
 |---|---|
-| **Sources** | Hacker News (top / new / best / Show / Ask, official API) · GitHub Trending (HTML adapter + REST enrichment) · GitHub Releases for repositories you follow · RSS 2.0 / RSS 1.0 / Atom feeds with OPML import and export and feed auto-discovery |
+| **Sources** | Hacker News (top / new / best / Show / Ask, official API) · GitHub Trending (HTML adapter + REST enrichment) · GitHub Releases for repositories you follow · RSS 2.0 / RSS 1.0 / Atom feeds with OPML import and export and feed auto-discovery · XDA Forums (follow device forums, read whole threads offline, new-thread alerts; the site's human check runs in a WebView and can be completed by hand) |
 | **Local AI** | Summary · key takeaways · explanation at three levels · grounded Q&A (with a check that the quoted evidence really is in the text) · daily briefing. Output is forced into valid JSON by a grammar, then validated |
 | **Offline** | Everything you have collected is stored in Room. Full article text is saved on request or when you bookmark. Each item says plainly whether you have the **full text, a preview, or just the title** |
 | **Search** | Full-text search (SQLite FTS4) with filters for source, topic, language, date, read state and bookmarks |
@@ -75,6 +75,8 @@ See [docs/TESTING.md](docs/TESTING.md) for how to run each suite and what each o
 
 * The only network traffic is to the sources you enable (Hacker News, GitHub, your feeds, article pages when you
   save text, article thumbnails if enabled) and, if you ask, the model download from Hugging Face.
+* XDA Forums are read through the system WebView, public pages only. ByteBrief never signs in; the site's cookies stay in
+  the WebView store and are cleared when you stop following the last forum.
 * Prompts, summaries, questions and your reading history never leave the device.
 * All traffic is HTTPS: cleartext is blocked by the network security config, https-to-http redirects are refused,
   `file:`/`content:`/other schemes are never fetched.

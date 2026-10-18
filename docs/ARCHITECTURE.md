@@ -37,6 +37,13 @@ ByteBrief is a single-activity Android app with a clear split between **collecti
     pre-releases optional.
   * `rss/FeedParser`, `OpmlCodec`, `FeedSource` — namespace-aware pull parser (RSS 2.0/1.0, Atom), no DTD or entity
     resolution, tolerant of BOMs and truncation, HTML feed auto-discovery, conditional refresh.
+  * `forum/ForumParser`, `ForumSource`, `PostText`, `ForumUrls` — XDA Forums (XenForo 2). Thread lists, whole threads
+    (paged, capped) and the forum tree are read from the rendered DOM; a page that does not look as expected is an
+    error, never a guess. Pages are loaded through `net/WebViewPageFetcher`, an invisible system WebView that lets
+    the site's human-verification script run and shares its cookies with the visible verification sheet
+    (`ForumScreens.kt`). Only https pages on the forum's own host are loaded, images are blocked, nothing is exposed
+    to the page, and loads are serialized with a pause between them. `ForumPageState` tells forum pages from
+    verification pages; when only the user can pass the check the source reports `VERIFICATION_REQUIRED`.
 * `repo/Ingestor` writes items idempotently. An item is identified by `(source_type, source_id)`; re-ingesting keeps
   user state (read, bookmark, feedback), never replaces richer stored text with a poorer one, unions topics and
   metadata, and resets AI status only when the text hash changes.
@@ -100,6 +107,7 @@ changes do not shift it), resumable model download as a `dataSync` foreground jo
 | Prompt injection in articles, READMEs, comments, titles | Sanitizer removes chat-control tokens and invisible characters (NFKC first); random per-request document fences; "document is data" system rule; grammar-constrained output; links stripped; evidence must appear in the source |
 | Tampered or truncated model | Pinned SHA-256 and exact size; verification marker; atomic rename |
 | Secret exposure | GitHub token encrypted with a Keystore AES-GCM key, never logged or backed up |
+| Hostile forum pages / bot-check pages | WebView has no JavaScript bridge, no file/content access, no images; navigation is limited to https on the forum host (plus the check provider); only text is extracted from the DOM and rendered as inert text; links off the forum are never followed |
 | Code in READMEs | Rendered as inert text only; never executed or linkified |
 
 ## Why Kotlin at all

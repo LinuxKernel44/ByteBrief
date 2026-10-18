@@ -36,6 +36,7 @@ public final class SyncWorker extends Worker {
             for (ContentItem item : c.db.contentDao().getReleasesRetrievedSince(before - 1000, 5)) titles.add(item.title);
             c.notifier.postReleases(report.newReleases, titles);
         }
+        if (!report.newForumThreads.isEmpty()) c.notifier.postForumThreads(report.newForumThreads);
         // A fully failed run caused by a transient problem is retried with exponential backoff, a few times;
         // after that the next periodic run tries again.
         if (report.shouldRetry() && getRunAttemptCount() < MAX_ATTEMPTS) return Result.retry();

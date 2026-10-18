@@ -30,6 +30,8 @@ public final class VmFactory implements ViewModelProvider.Factory {
         if (cls == BriefingViewModel.class) return (T) new BriefingViewModel(container);
         if (cls == SourcesViewModel.class) return (T) new SourcesViewModel(container);
         if (cls == ModelsViewModel.class) return (T) new ModelsViewModel(container);
+        if (cls == ForumsViewModel.class) return (T) new ForumsViewModel(container);
+        if (cls == ForumBrowserViewModel.class) return (T) new ForumBrowserViewModel(container);
         if (cls == SettingsViewModel.class) return (T) new SettingsViewModel(container);
         throw new IllegalArgumentException("Unknown ViewModel " + cls);
     }

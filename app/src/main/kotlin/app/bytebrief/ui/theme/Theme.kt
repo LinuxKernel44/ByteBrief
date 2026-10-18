@@ -38,6 +38,7 @@ object BB {
     val Trending = Color(0xFFB08CFF)
     val Rss = Color(0xFF4FD1E8)
     val Release = Color(0xFF6EE7A8)
+    val Forum = Color(0xFFFFD166)
 
     // Glass
     val GlassTint = Color(0x990A0D16)       // dark tint keeps text legible over any backdrop

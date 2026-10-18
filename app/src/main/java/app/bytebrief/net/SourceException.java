@@ -2,7 +2,7 @@ package app.bytebrief.net;
 
 /** Failure while collecting content from a remote source. Never carries credentials or response bodies. */
 public class SourceException extends Exception {
-    public enum Kind { INVALID_URL, NETWORK, HTTP, RATE_LIMITED, PARSE, TOO_LARGE }
+    public enum Kind { INVALID_URL, NETWORK, HTTP, RATE_LIMITED, PARSE, TOO_LARGE, VERIFICATION_REQUIRED }
 
     public final Kind kind;
     public final int httpCode;
@@ -22,6 +22,11 @@ public class SourceException extends Exception {
 
     public static SourceException parse(String message, Throwable cause) {
         return new SourceException(Kind.PARSE, message, 0, 0, cause);
+    }
+
+    /** The site shows a human-verification page that only the user can complete. */
+    public static SourceException verificationRequired(String message) {
+        return new SourceException(Kind.VERIFICATION_REQUIRED, message, 0, 0, null);
     }
 
     public static SourceException invalidUrl(String message) {

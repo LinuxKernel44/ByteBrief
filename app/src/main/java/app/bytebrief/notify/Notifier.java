@@ -20,14 +20,17 @@ public final class Notifier {
     public static final String CHANNEL_BRIEFING = "briefing";
     public static final String CHANNEL_RELEASES = "releases";
     public static final String CHANNEL_MODELS = "models";
+    public static final String CHANNEL_FORUMS = "forums";
     public static final String EXTRA_ROUTE = "route";
     public static final String ROUTE_BRIEFING = "briefing";
     public static final String ROUTE_RELEASES = "releases";
     public static final String ROUTE_MODELS = "models";
+    public static final String ROUTE_FORUMS = "forums";
 
     public static final int ID_BRIEFING = 1001;
     public static final int ID_RELEASES = 1002;
     public static final int ID_MODEL_DOWNLOAD = 1003;
+    public static final int ID_FORUMS = 1004;
 
     private final Context context;
 
@@ -39,6 +42,7 @@ public final class Notifier {
         NotificationManager nm = context.getSystemService(NotificationManager.class);
         nm.createNotificationChannel(new NotificationChannel(CHANNEL_BRIEFING, "Daily briefing", NotificationManager.IMPORTANCE_DEFAULT));
         nm.createNotificationChannel(new NotificationChannel(CHANNEL_RELEASES, "Release alerts", NotificationManager.IMPORTANCE_DEFAULT));
+        nm.createNotificationChannel(new NotificationChannel(CHANNEL_FORUMS, "Forum threads", NotificationManager.IMPORTANCE_DEFAULT));
         NotificationChannel models = new NotificationChannel(CHANNEL_MODELS, "Model downloads", NotificationManager.IMPORTANCE_LOW);
         models.setShowBadge(false);
         nm.createNotificationChannel(models);
@@ -74,6 +78,20 @@ public final class Notifier {
                 .setStyle(style)
                 .setAutoCancel(true)
                 .setContentIntent(open(ROUTE_RELEASES))
+                .build());
+    }
+
+    public void postForumThreads(List<String> titles) {
+        if (!canPost() || titles.isEmpty()) return;
+        NotificationCompat.InboxStyle style = new NotificationCompat.InboxStyle();
+        for (String t : titles.subList(0, Math.min(5, titles.size()))) style.addLine(t);
+        post(ID_FORUMS, new NotificationCompat.Builder(context, CHANNEL_FORUMS)
+                .setSmallIcon(R.drawable.ic_stat_bytebrief)
+                .setContentTitle(titles.size() == 1 ? "New forum thread" : titles.size() + " new forum threads")
+                .setContentText(titles.get(0))
+                .setStyle(style)
+                .setAutoCancel(true)
+                .setContentIntent(open(ROUTE_FORUMS))
                 .build());
     }
 

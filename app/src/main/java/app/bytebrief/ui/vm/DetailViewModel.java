@@ -41,10 +41,17 @@ public final class DetailViewModel extends ViewModel {
     public static final class ArticleState {
         public final boolean working;
         @Nullable public final String message;
+        /** The source wants the user to pass a human-verification step before it can be read. */
+        public final boolean needsVerification;
 
         ArticleState(boolean working, @Nullable String message) {
+            this(working, message, false);
+        }
+
+        ArticleState(boolean working, @Nullable String message, boolean needsVerification) {
             this.working = working;
             this.message = message;
+            this.needsVerification = needsVerification;
         }
     }
 
@@ -168,6 +175,10 @@ public final class DetailViewModel extends ViewModel {
                     default: msg = "Item not found."; break;
                 }
             } catch (SourceException e) {
+                if (e.kind == SourceException.Kind.VERIFICATION_REQUIRED) {
+                    article.postValue(new ArticleState(false, "XDA Forums wants to check that you are human before it shows this thread.", true));
+                    return;
+                }
                 msg = "Couldn't download the page: " + e.getMessage();
             }
             article.postValue(new ArticleState(false, msg));

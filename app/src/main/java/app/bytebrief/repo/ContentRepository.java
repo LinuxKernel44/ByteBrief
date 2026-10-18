@@ -181,7 +181,7 @@ public final class ContentRepository {
         if (current != null && current.running) return;
         syncStatus.setValue(new SyncStatus(true, current == null ? null : current.lastReport, settings.lastSyncAt()));
         io.execute(() -> {
-            SyncReport report = sync.syncAll();
+            SyncReport report = sync.syncAll(true);
             settings.setLastSyncAt(report.finishedAt);
             syncStatus.postValue(new SyncStatus(false, report, report.finishedAt));
         });

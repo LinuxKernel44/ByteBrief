@@ -8,6 +8,7 @@ import java.util.concurrent.TimeUnit;
 import app.bytebrief.data.db.AppDatabase;
 import app.bytebrief.data.db.ContentItem;
 import app.bytebrief.data.db.Feed;
+import app.bytebrief.data.db.Forum;
 import app.bytebrief.data.db.TrackedRepo;
 import app.bytebrief.domain.SourceType;
 import app.bytebrief.net.SourceException;
@@ -15,6 +16,7 @@ import app.bytebrief.settings.SyncConfig;
 import app.bytebrief.source.github.ReleaseSource;
 import app.bytebrief.source.github.TrendingSource;
 import app.bytebrief.source.hn.HackerNewsSource;
+import app.bytebrief.source.forum.ForumSource;
 import app.bytebrief.source.rss.FeedSource;
 
 /**
@@ -36,6 +38,8 @@ public class SyncManager {
     private final ReleaseSource releases;
     private final SyncConfig config;
     private final Clock clock;
+    private ForumSource forumSource;
+    private java.util.function.BooleanSupplier metered = () -> false;
 
     public SyncManager(AppDatabase db, Ingestor ingestor, HackerNewsSource hackerNews, TrendingSource trending,
                        FeedSource feeds, ReleaseSource releases, SyncConfig config, Clock clock) {
@@ -49,12 +53,24 @@ public class SyncManager {
         this.clock = clock;
     }
 
+    /** Enables forum synchronization; without this call forums are ignored. */
+    public void setForumSupport(ForumSource forumSource, java.util.function.BooleanSupplier isMeteredNetwork) {
+        this.forumSource = forumSource;
+        this.metered = isMeteredNetwork;
+    }
+
     public SyncReport syncAll() {
+        return syncAll(false);
+    }
+
+    /** @param manual the user asked for this run, so forums are refreshed even if they were checked recently */
+    public SyncReport syncAll(boolean manual) {
         SyncReport report = new SyncReport();
         if (config.isSourceEnabled(SourceType.HACKER_NEWS)) syncHackerNews(report);
         if (config.isSourceEnabled(SourceType.GITHUB_TRENDING)) syncTrending(report);
         if (config.isSourceEnabled(SourceType.RSS)) syncFeeds(report, null);
         if (config.isSourceEnabled(SourceType.GITHUB_RELEASE)) syncReleases(report);
+        if (config.isSourceEnabled(SourceType.XDA_FORUM)) syncForums(report, null, manual);
         report.pruned = db.contentDao().deleteOlderThan(clock.millis() - TimeUnit.DAYS.toMillis(config.retentionDays()));
         report.finishedAt = clock.millis();
         return report;
@@ -142,6 +158,76 @@ public class SyncManager {
         }
         feed.lastFetchedAt = now;
         db.feedDao().update(feed);
+    }
+
+    /** Refreshes a single forum regardless of its enabled flag, backoff or network (manual refresh). */
+    public SyncReport syncForum(long forumId) {
+        SyncReport report = new SyncReport();
+        syncForums(report, forumId, true);
+        report.finishedAt = clock.millis();
+        return report;
+    }
+
+    // ---- XDA Forums ---------------------------------------------------------------------------
+
+    /** Forums are checked at most this often by background runs. */
+    static final long FORUM_MIN_INTERVAL_MS = TimeUnit.HOURS.toMillis(3);
+    /** Only threads started this recently trigger an alert, so an old sticky post coming back never does. */
+    static final long FORUM_ALERT_WINDOW_MS = TimeUnit.DAYS.toMillis(3);
+
+    void syncForums(SyncReport report, Long onlyForumId, boolean manual) {
+        if (forumSource == null) return;
+        List<Forum> forums = new ArrayList<>();
+        for (Forum f : onlyForumId != null ? java.util.Collections.singletonList(db.forumDao().getById(onlyForumId)) : db.forumDao().getEnabled()) {
+            if (f != null) forums.add(f);
+        }
+        if (forums.isEmpty()) return;
+        SyncReport.SourceOutcome out = report.outcome(SourceType.XDA_FORUM.code);
+        if (!manual && config.forumsWifiOnly() && metered.getAsBoolean()) {
+            out.status = SyncReport.Status.SKIPPED;
+            out.error = "Forums wait for Wi-Fi";
+            return;
+        }
+        for (Forum f : forums) {
+            if (!manual && (f.needsVerification || clock.millis() - f.lastFetchedAt < FORUM_MIN_INTERVAL_MS && f.lastError == null)) continue;
+            if (!manual && f.consecutiveFailures >= FEED_BACKOFF_AFTER_FAILURES && clock.millis() - f.lastFetchedAt < TimeUnit.DAYS.toMillis(1)) continue;
+            long now = clock.millis();
+            try {
+                List<ContentItem> items = forumSource.fetchThreads(f);
+                List<String> fresh = new ArrayList<>();
+                for (ContentItem item : items) {
+                    boolean isNew = db.contentDao().findBySource(item.sourceType, item.sourceId) == null;
+                    long started = startedAt(item);
+                    if (isNew && f.lastFetchedAt > 0 && f.notifyNewThreads && now - started < FORUM_ALERT_WINDOW_MS) fresh.add(item.title);
+                }
+                out.stats.add(ingestor.ingest(items));
+                report.newForumThreads.addAll(fresh);
+                f.lastError = null;
+                f.needsVerification = false;
+                f.consecutiveFailures = 0;
+            } catch (SourceException e) {
+                f.lastError = e.getMessage();
+                if (e.kind == SourceException.Kind.VERIFICATION_REQUIRED) {
+                    f.needsVerification = true;
+                    out.fail((f.title != null ? f.title : f.url) + ": verification needed", false, 0);
+                    f.lastFetchedAt = now;
+                    db.forumDao().update(f);
+                    return; // the other forums are on the same site and would be asked the same
+                }
+                f.consecutiveFailures++;
+                out.fail((f.title != null ? f.title : f.url) + ": " + e.getMessage(), e.isRetryable(), e.retryAfterEpochMillis);
+            }
+            f.lastFetchedAt = now;
+            db.forumDao().update(f);
+        }
+    }
+
+    private static long startedAt(ContentItem item) {
+        try {
+            return item.metadataJson == null ? item.publishedAt : new org.json.JSONObject(item.metadataJson).optLong("started_at", item.publishedAt);
+        } catch (org.json.JSONException e) {
+            return item.publishedAt;
+        }
     }
 
     // ---- GitHub Releases ----------------------------------------------------------------------

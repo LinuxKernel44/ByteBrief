@@ -43,6 +43,8 @@ import app.bytebrief.ui.screens.BriefingScreen
 import app.bytebrief.ui.screens.BrowseScreen
 import app.bytebrief.ui.screens.DetailScreen
 import app.bytebrief.ui.screens.ForYouScreen
+import app.bytebrief.ui.screens.ForumBrowserScreen
+import app.bytebrief.ui.screens.VerifyScreen
 import app.bytebrief.ui.screens.MoreScreen
 import app.bytebrief.ui.screens.ModelsScreen
 import app.bytebrief.ui.screens.OnboardingScreen
@@ -105,7 +107,7 @@ fun AppRoot(activity: ComponentActivity, container: AppContainer, pendingRoute: 
                     LaunchedEffect(route) {
                         when (route) {
                             "briefing" -> nav.selectTab(Tab.Briefing)
-                            "releases" -> nav.selectTab(Tab.Browse)
+                            "releases", "forums" -> nav.selectTab(Tab.Browse)
                             "models" -> { nav.selectTab(Tab.More); nav.push(Route.Models) }
                         }
                         if (route != null) pendingRoute.value = null
@@ -163,6 +165,8 @@ private fun AppContent(nav: NavState) {
                             Route.Models -> ModelsScreen()
                             Route.Settings -> SettingsScreen()
                             Route.About -> AboutScreen()
+                            Route.Verify -> VerifyScreen()
+                            Route.ForumBrowser -> ForumBrowserScreen()
                             is Route.Home -> Unit
                         }
                     }

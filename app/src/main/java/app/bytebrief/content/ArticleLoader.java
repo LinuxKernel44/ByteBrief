@@ -18,6 +18,7 @@ import app.bytebrief.net.SourceException;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import app.bytebrief.source.forum.ForumSource;
 import app.bytebrief.source.github.GithubApi;
 
 /**
@@ -43,6 +44,12 @@ public class ArticleLoader {
     private final HttpFetcher http;
     private final GithubApi github;
     private final Clock clock;
+    @Nullable private ForumSource forums;
+
+    /** Lets {@link #load} read forum threads; without it they are reported as unsupported. */
+    public void setForumSource(ForumSource forums) {
+        this.forums = forums;
+    }
 
     public ArticleLoader(AppDatabase db, HttpFetcher http, GithubApi github, Clock clock) {
         this.db = db;
@@ -59,6 +66,9 @@ public class ArticleLoader {
         String text;
         if (SourceType.GITHUB_TRENDING.code.equals(item.sourceType)) {
             text = readme(item);
+        } else if (SourceType.XDA_FORUM.code.equals(item.sourceType)) {
+            if (forums == null) return Outcome.UNSUPPORTED_TYPE;
+            text = forums.fetchThreadText(item.canonicalUrl);
         } else {
             Map<String, String> headers = new HashMap<>();
             headers.put("Accept", "text/html,application/xhtml+xml;q=0.9,*/*;q=0.1");

@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.2.0 — XDA Forums
+
+* New source: XDA Forums. Follow a device forum by address or by browsing the forum tree (with a filter); its newest
+  threads appear in For You, Browse, Search and Saved.
+* Open a thread to read it in full (up to 12 pages, quotes shortened) and keep it offline; the AI features work on it.
+* The forum's human-verification check is completed by a hidden system WebView; when it needs a tap, a bottom sheet
+  with an eye button shows the page, and Sources shows "Action required".
+* Optional alerts for new threads per forum; background refresh at most every 3 hours, on Wi-Fi by default.
+* Database version 2 (new `forums` table, migrated without losing data). Public pages only, no sign-in.
+
 ## 0.1.2 — new icon
 
 * New app icon: a glass AI chip with a star, as adaptive, monochrome (themed) and status-bar icons.

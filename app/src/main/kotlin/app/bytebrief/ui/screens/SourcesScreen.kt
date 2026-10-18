@@ -29,6 +29,7 @@ import app.bytebrief.domain.SourceType
 import app.bytebrief.source.github.TrendingSource
 import app.bytebrief.source.hn.HackerNewsSource
 import app.bytebrief.ui.LocalNav
+import app.bytebrief.ui.Route
 import app.bytebrief.ui.components.Chip
 import app.bytebrief.ui.components.Divider
 import app.bytebrief.ui.components.GlassButton
@@ -51,6 +52,7 @@ import app.bytebrief.ui.util.Format
 import app.bytebrief.ui.util.Versioned
 import app.bytebrief.ui.util.observeAsState
 import app.bytebrief.ui.viewModelOf
+import app.bytebrief.ui.vm.ForumsViewModel
 import app.bytebrief.ui.vm.SourcesViewModel
 import androidx.compose.foundation.lazy.items
 import kotlinx.coroutines.Dispatchers
@@ -59,7 +61,16 @@ import kotlinx.coroutines.withContext
 @Composable
 fun SourcesScreen() {
     val vm = viewModelOf<SourcesViewModel>()
+    val fvm = viewModelOf<ForumsViewModel>()
+    val forums by fvm.forums.observeAsState()
+    val forumMessage by fvm.message.observeAsState()
+    val forumBusy by fvm.busy.observeAsState()
+    val verifyRequested by fvm.verificationRequested.observeAsState()
+    val forumVersion by fvm.settingsVersion.observeAsState()
+    val fs = remember(forumVersion) { Versioned(fvm.settings(), forumVersion) }
+    var forumUrl by remember { mutableStateOf("") }
     val nav = LocalNav.current
+    LaunchedEffect(verifyRequested) { if (verifyRequested == true) nav.push(Route.Verify) }
     val context = LocalContext.current
     val feeds by vm.feeds.observeAsState()
     val repos by vm.repos.observeAsState()
@@ -160,6 +171,64 @@ LazyColumn(
                                     style = BBType.Caption, color = if (f.lastError != null) BB.Warm else BB.TextTertiary, maxLines = 2, modifier = Modifier.weight(1f),
                                 )
                                 Chip(if (f.enabled) "Enabled" else "Disabled", f.enabled, { vm.setFeedEnabled(f, !f.enabled) })
+                            }
+                        }
+                    }
+                }
+            }
+
+            item { SectionHeader("XDA FORUMS") }
+            item {
+                Panel {
+                    SwitchRow("XDA Forums", "Threads of the forums you follow. Pages are loaded through the system web view.", s.v.isSourceEnabled(SourceType.XDA_FORUM), { vm.setSourceEnabled(SourceType.XDA_FORUM, it) })
+                    SwitchRow("Only on Wi-Fi", "Forum pages are large; background refreshes wait for an unmetered network.", fs.v.forumsWifiOnly(), { fvm.setWifiOnly(it) })
+                    Divider()
+                    if (forumMessage != null) {
+                        Row(Modifier.fillMaxWidth().padding(vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
+                            Txt(forumMessage!!, style = BBType.Body, color = BB.Accent, modifier = Modifier.weight(1f))
+                            PlainIconButton(Ic.CLOSE, "Dismiss message", { fvm.consumeMessage() })
+                        }
+                    }
+                    Column(Modifier.padding(vertical = 10.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                        TextInput(forumUrl, { forumUrl = it }, "Forum address, e.g. xdaforums.com/f/oneplus-15.12971/", onSearch = { fvm.addForum(forumUrl); forumUrl = "" }, leading = Ic.FORUM)
+                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+                            GlassButton(if (forumBusy == true) "Checking…" else "Follow forum", { fvm.addForum(forumUrl); forumUrl = "" }, icon = Ic.PLUS, prominent = true, enabled = forumBusy != true && forumUrl.isNotBlank())
+                            GlassButton("Browse forums", { nav.push(Route.ForumBrowser) }, icon = Ic.LAYERS)
+                        }
+                        Txt("Public pages only. ByteBrief never signs in to XDA and loads at most a few pages per forum every few hours.", style = BBType.Caption)
+                    }
+                    val list = forums.orEmpty()
+                    if (list.isEmpty()) Txt("You're not following any forums.", style = BBType.BodySecondary, modifier = Modifier.padding(bottom = 12.dp))
+                    for (f in list) {
+                        Divider()
+                        Column(Modifier.padding(vertical = 8.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Column(Modifier.weight(1f)) {
+                                    Txt(f.title ?: f.url, style = BBType.Body, maxLines = 1)
+                                    Txt(f.url, style = BBType.Caption, maxLines = 1)
+                                }
+                                PlainIconButton(Ic.REFRESH, "Refresh ${f.title ?: f.url}", { fvm.refresh(f) })
+                                PlainIconButton(Ic.TRASH, "Stop following ${f.title ?: f.url}", { fvm.remove(f) }, tint = BB.Danger)
+                            }
+                            if (f.needsVerification) {
+                                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                                    Icon(Ic.LOCK, BB.Warm, size = 18.dp)
+                                    Txt("Action required: XDA Forums wants to check that you are human.", style = BBType.Caption, color = BB.Warm, maxLines = 3, modifier = Modifier.weight(1f))
+                                    GlassButton("Verify", { nav.push(Route.Verify) }, prominent = true)
+                                }
+                            }
+                            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                Txt(
+                                    when {
+                                        f.needsVerification -> "Waiting for verification"
+                                        f.lastError != null -> "⚠ ${f.lastError}"
+                                        f.lastFetchedAt > 0 -> "Updated ${Format.ago(f.lastFetchedAt)}"
+                                        else -> "Not fetched yet"
+                                    },
+                                    style = BBType.Caption, color = if (f.lastError != null) BB.Warm else BB.TextTertiary, maxLines = 2, modifier = Modifier.weight(1f),
+                                )
+                                Chip(if (f.notifyNewThreads) "Alerts on" else "Alerts off", f.notifyNewThreads, { fvm.setNotify(f, !f.notifyNewThreads) })
+                                Chip(if (f.enabled) "On" else "Off", f.enabled, { fvm.setEnabled(f, !f.enabled) })
                             }
                         }
                     }

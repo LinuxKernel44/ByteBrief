@@ -56,7 +56,7 @@ LazyColumn(
             item { TextInput(query, { vm.setText(it) }, "Search titles, text and topics", leading = Ic.SEARCH) }
             item {
                 Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    for ((code, label) in listOf<Pair<String?, String>>(null to "All", "hn" to "Hacker News", "gh_trending" to "Trending", "gh_release" to "Releases", "rss" to "RSS")) {
+                    for ((code, label) in listOf<Pair<String?, String>>(null to "All", "hn" to "Hacker News", "gh_trending" to "Trending", "gh_release" to "Releases", "rss" to "RSS", "xda" to "XDA")) {
                         Chip(label, f.source == code, { vm.updateFilters { it.source = code } })
                     }
                 }

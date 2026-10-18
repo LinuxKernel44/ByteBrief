@@ -5,7 +5,8 @@ public enum SourceType {
     GITHUB_TRENDING("gh_trending", "GitHub Trending"),
     HACKER_NEWS("hn", "Hacker News"),
     RSS("rss", "RSS"),
-    GITHUB_RELEASE("gh_release", "GitHub Releases");
+    GITHUB_RELEASE("gh_release", "GitHub Releases"),
+    XDA_FORUM("xda", "XDA Forums");
 
     public final String code;
     public final String label;

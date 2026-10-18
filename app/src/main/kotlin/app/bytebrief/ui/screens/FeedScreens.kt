@@ -124,7 +124,7 @@ LazyColumn(
 
 private val SOURCE_FILTERS = listOf<Triple<String?, String, Ic?>>(
     Triple(null, "All", null), Triple("hn", "Hacker News", Ic.HN), Triple("gh_trending", "Trending", Ic.FLAME),
-    Triple("gh_release", "Releases", Ic.TAG), Triple("rss", "RSS", Ic.RSS),
+    Triple("gh_release", "Releases", Ic.TAG), Triple("rss", "RSS", Ic.RSS), Triple("xda", "XDA", Ic.FORUM),
 )
 
 @Composable

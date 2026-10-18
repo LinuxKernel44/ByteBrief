@@ -17,6 +17,8 @@ sealed class Route(val key: String) {
     data object Models : Route("models")
     data object Settings : Route("settings")
     data object About : Route("about")
+    data object Verify : Route("verify")
+    data object ForumBrowser : Route("forum-browser")
 
     companion object {
         fun parse(key: String): Route = when {
@@ -27,6 +29,8 @@ sealed class Route(val key: String) {
             key == "models" -> Models
             key == "settings" -> Settings
             key == "about" -> About
+            key == "verify" -> Verify
+            key == "forum-browser" -> ForumBrowser
             else -> Home(Tab.ForYou)
         }
     }

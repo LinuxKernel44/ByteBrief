@@ -28,6 +28,8 @@ public final class SyncReport {
     public final Map<String, SourceOutcome> outcomes = new LinkedHashMap<>();
     /** Releases inserted during this run (drives release notifications). */
     public int newReleases;
+    /** Titles of new threads in forums that have alerts on (drives forum notifications). */
+    public final java.util.List<String> newForumThreads = new java.util.ArrayList<>();
     public int pruned;
     public long finishedAt;
 

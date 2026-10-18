@@ -19,7 +19,7 @@ import androidx.compose.ui.unit.dp
 enum class Ic {
     SPARK, LIST, SUN, BOOKMARK, BOOKMARK_FILLED, SLIDERS, SEARCH, BACK, CLOSE, REFRESH, LINK, CHECK, PLUS, MINUS,
     FLAME, TAG, RSS, HN, CHIP, DOWNLOAD, TRASH, PAUSE, PLAY, THUMB_UP, THUMB_DOWN, EYE, EYE_OFF, EXTERNAL, CLOUD_OFF,
-    LAYERS, CHEVRON_RIGHT, FILTER, QUESTION, WARNING, STAR, FORK, LOCK
+    LAYERS, CHEVRON_RIGHT, FILTER, QUESTION, WARNING, STAR, FORK, LOCK, FORUM
 }
 
 @Composable
@@ -83,5 +83,6 @@ private fun DrawScope.draw(icon: Ic, c: Color, u: Float, s: Stroke) {
         Ic.STAR -> path({ moveTo(12 * u, 3.5f * u); lineTo(14.6f * u, 9.2f * u); lineTo(20.8f * u, 9.8f * u); lineTo(16.1f * u, 14 * u); lineTo(17.5f * u, 20.2f * u); lineTo(12 * u, 17 * u); lineTo(6.5f * u, 20.2f * u); lineTo(7.9f * u, 14 * u); lineTo(3.2f * u, 9.8f * u); lineTo(9.4f * u, 9.2f * u); close() })
         Ic.FORK -> { circle(7f, 5f, 2f); circle(17f, 5f, 2f); circle(12f, 19f, 2f); path({ moveTo(7 * u, 7 * u); lineTo(7 * u, 10 * u); quadraticTo(7 * u, 12 * u, 9 * u, 12 * u); lineTo(15 * u, 12 * u); quadraticTo(17 * u, 12 * u, 17 * u, 10 * u); lineTo(17 * u, 7 * u) }); line(12f, 12f, 12f, 17f) }
         Ic.LOCK -> { drawRoundRect(c, p(5f, 10.5f), Size(14 * u, 10 * u), androidx.compose.ui.geometry.CornerRadius(2.5f * u), style = s); path({ moveTo(8 * u, 10.5f * u); lineTo(8 * u, 8 * u); quadraticTo(8 * u, 4 * u, 12 * u, 4 * u); quadraticTo(16 * u, 4 * u, 16 * u, 8 * u); lineTo(16 * u, 10.5f * u) }) }
+        Ic.FORUM -> { path({ moveTo(4 * u, 5 * u); lineTo(15 * u, 5 * u); lineTo(15 * u, 13 * u); lineTo(9 * u, 13 * u); lineTo(6 * u, 16 * u); lineTo(6 * u, 13 * u); lineTo(4 * u, 13 * u); close() }); path({ moveTo(18 * u, 9 * u); lineTo(20 * u, 9 * u); lineTo(20 * u, 17 * u); lineTo(18 * u, 17 * u); lineTo(18 * u, 20 * u); lineTo(15 * u, 17 * u); lineTo(10 * u, 17 * u); lineTo(10 * u, 14.5f * u) }) }
     }
 }
