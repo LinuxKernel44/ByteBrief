@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.2.2 — Button feedback
 
 * Buttons react to a tap: every control dims while pressed, "Follow this forum" turns into a green "Following" once
   done, and one-shot actions such as saving a token or clearing what was learned briefly confirm themselves.
