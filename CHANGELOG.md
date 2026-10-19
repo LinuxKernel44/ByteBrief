@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.2.1 — Faster refresh
 
 * Refreshing sources now shows a progress bar with a done/total counter.
 * Sources are refreshed in parallel (4 at a time by default). Settings > Sync lets you choose 2 to 8 at once, or turn
