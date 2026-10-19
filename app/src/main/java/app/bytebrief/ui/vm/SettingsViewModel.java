@@ -36,6 +36,8 @@ public final class SettingsViewModel extends ViewModel {
     public void setBackgroundSync(boolean v) { c.settings.setBackgroundSyncEnabled(v); c.scheduler.applySync(); bump(); }
     public void setSyncInterval(int hours) { c.settings.setSyncIntervalHours(hours); c.scheduler.applySync(); bump(); }
     public void setUnmeteredOnly(boolean v) { c.settings.setSyncOnUnmeteredOnly(v); c.scheduler.applySync(); bump(); }
+    public void setParallelSync(boolean v) { c.settings.setParallelSync(v); bump(); }
+    public void setSyncThreads(int n) { c.settings.setSyncThreads(n); bump(); }
     public void setRetention(int days) { c.settings.setRetentionDays(days); bump(); }
     public void setBriefing(boolean v) { c.settings.setBriefingEnabled(v); c.scheduler.applyBriefing(); bump(); }
     public void setBriefingTime(int minuteOfDay) { c.settings.setBriefingMinuteOfDay(minuteOfDay); c.scheduler.applyBriefing(); bump(); }

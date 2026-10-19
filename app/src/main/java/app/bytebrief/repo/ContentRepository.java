@@ -47,11 +47,27 @@ public final class ContentRepository {
         public final boolean running;
         public final SyncReport lastReport;
         public final long lastSyncAt;
+        /** Units of work finished and planned in the running sync; {@code total} is 0 until the plan is known. */
+        public final int done;
+        public final int total;
+        public final String currentLabel;
 
         SyncStatus(boolean running, SyncReport lastReport, long lastSyncAt) {
+            this(running, lastReport, lastSyncAt, 0, 0, "");
+        }
+
+        SyncStatus(boolean running, SyncReport lastReport, long lastSyncAt, int done, int total, String currentLabel) {
             this.running = running;
             this.lastReport = lastReport;
             this.lastSyncAt = lastSyncAt;
+            this.done = done;
+            this.total = total;
+            this.currentLabel = currentLabel;
+        }
+
+        /** Progress in 0..1, or a negative value while the amount of work is still unknown. */
+        public float fraction() {
+            return total <= 0 ? -1f : Math.min(1f, done / (float) total);
         }
     }
 
@@ -181,7 +197,9 @@ public final class ContentRepository {
         if (current != null && current.running) return;
         syncStatus.setValue(new SyncStatus(true, current == null ? null : current.lastReport, settings.lastSyncAt()));
         io.execute(() -> {
-            SyncReport report = sync.syncAll(true);
+            SyncReport previous = current == null ? null : current.lastReport;
+            SyncReport report = sync.syncAll(true, (done, total, label) ->
+                    syncStatus.postValue(new SyncStatus(true, previous, settings.lastSyncAt(), done, total, label)));
             settings.setLastSyncAt(report.finishedAt);
             syncStatus.postValue(new SyncStatus(false, report, report.finishedAt));
         });

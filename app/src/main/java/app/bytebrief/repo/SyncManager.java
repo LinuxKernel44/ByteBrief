@@ -3,7 +3,13 @@ package app.bytebrief.repo;
 import java.time.Clock;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import app.bytebrief.data.db.AppDatabase;
 import app.bytebrief.data.db.ContentItem;
@@ -59,21 +65,114 @@ public class SyncManager {
         this.metered = isMeteredNetwork;
     }
 
-    public SyncReport syncAll() {
-        return syncAll(false);
+    /** Receives coarse progress: {@code done} of {@code total} units of work finished, and what just finished. */
+    public interface Progress {
+        void onProgress(int done, int total, String label);
     }
 
-    /** @param manual the user asked for this run, so forums are refreshed even if they were checked recently */
+    private static final class Task {
+        final String label;
+        final Runnable body;
+
+        Task(String label, Runnable body) {
+            this.label = label;
+            this.body = body;
+        }
+    }
+
+    public SyncReport syncAll() {
+        return syncAll(false, null);
+    }
+
     public SyncReport syncAll(boolean manual) {
+        return syncAll(manual, null);
+    }
+
+    /**
+     * @param manual   the user asked for this run, so forums are refreshed even if they were checked recently
+     * @param progress optional listener, called from worker threads after each unit of work
+     */
+    public SyncReport syncAll(boolean manual, Progress progress) {
         SyncReport report = new SyncReport();
-        if (config.isSourceEnabled(SourceType.HACKER_NEWS)) syncHackerNews(report);
-        if (config.isSourceEnabled(SourceType.GITHUB_TRENDING)) syncTrending(report);
-        if (config.isSourceEnabled(SourceType.RSS)) syncFeeds(report, null);
-        if (config.isSourceEnabled(SourceType.GITHUB_RELEASE)) syncReleases(report);
-        if (config.isSourceEnabled(SourceType.XDA_FORUM)) syncForums(report, null, manual);
+        List<Task> tasks = planTasks(report, manual);
+        runTasks(tasks, report, progress);
         report.pruned = db.contentDao().deleteOlderThan(clock.millis() - TimeUnit.DAYS.toMillis(config.retentionDays()));
         report.finishedAt = clock.millis();
         return report;
+    }
+
+    /** One task per feed and per repository so slow sources never hold up the others; slowest kinds go first. */
+    private List<Task> planTasks(SyncReport report, boolean manual) {
+        List<Task> tasks = new ArrayList<>();
+        if (config.isSourceEnabled(SourceType.XDA_FORUM) && forumSource != null) {
+            tasks.add(new Task("XDA Forums", () -> syncForums(report, null, manual)));
+        }
+        if (config.isSourceEnabled(SourceType.HACKER_NEWS)) tasks.add(new Task("Hacker News", () -> syncHackerNews(report)));
+        if (config.isSourceEnabled(SourceType.GITHUB_TRENDING)) tasks.add(new Task("GitHub Trending", () -> syncTrending(report)));
+        if (config.isSourceEnabled(SourceType.GITHUB_RELEASE)) {
+            SyncReport.SourceOutcome out = report.outcome(SourceType.GITHUB_RELEASE.code);
+            AtomicBoolean quotaHit = new AtomicBoolean();
+            for (TrackedRepo repo : db.trackedRepoDao().getEnabled()) {
+                tasks.add(new Task(repo.owner + "/" + repo.name, () -> refreshRepo(repo, report, out, quotaHit)));
+            }
+        }
+        if (config.isSourceEnabled(SourceType.RSS)) {
+            SyncReport.SourceOutcome out = report.outcome(SourceType.RSS.code);
+            for (Feed f : db.feedDao().getEnabled()) {
+                if (isBackedOff(f)) continue;
+                tasks.add(new Task(f.title != null ? f.title : f.url, () -> refreshFeed(f, out, false)));
+            }
+        }
+        return tasks;
+    }
+
+    private void runTasks(List<Task> tasks, SyncReport report, Progress progress) {
+        int total = tasks.size();
+        AtomicInteger done = new AtomicInteger();
+        if (progress != null) progress.onProgress(0, total, "");
+        int threads = config.parallelSync() ? Math.max(1, Math.min(config.syncThreads(), total)) : 1;
+        if (threads == 1) {
+            for (Task t : tasks) {
+                runGuarded(t, report);
+                if (progress != null) progress.onProgress(done.incrementAndGet(), total, t.label);
+            }
+            return;
+        }
+        ExecutorService pool = Executors.newFixedThreadPool(threads, r -> {
+            Thread th = new Thread(r, "bytebrief-sync");
+            th.setDaemon(true);
+            return th;
+        });
+        try {
+            List<Future<?>> futures = new ArrayList<>();
+            for (Task t : tasks) {
+                futures.add(pool.submit(() -> {
+                    runGuarded(t, report);
+                    if (progress != null) progress.onProgress(done.incrementAndGet(), total, t.label);
+                }));
+            }
+            for (Future<?> f : futures) {
+                try {
+                    f.get();
+                } catch (ExecutionException ignored) {
+                    // runGuarded already recorded the failure
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                    return;
+                }
+            }
+        } finally {
+            pool.shutdownNow();
+        }
+    }
+
+    /** A bug or unexpected error in one source must not take the whole run down. */
+    private static void runGuarded(Task t, SyncReport report) {
+        try {
+            t.body.run();
+        } catch (RuntimeException e) {
+            report.outcome("internal").fail(t.label + ": " + e.getClass().getSimpleName(), false, 0);
+        }
     }
 
     /** Refreshes a single feed regardless of its enabled flag or failure backoff (manual refresh). */
@@ -96,7 +195,7 @@ public class SyncManager {
                     ContentItem existing = db.contentDao().findBySource(SourceType.HACKER_NEWS.code, id);
                     return existing != null && now - existing.publishedAt > HN_REFRESH_WINDOW_MS;
                 });
-                out.stats.add(ingestor.ingest(r.items));
+                out.addStats(ingestor.ingest(r.items));
                 if (r.failures > 0) out.fail(r.failures + " stories could not be retrieved", true, 0);
             } catch (SourceException e) {
                 out.fail("Hacker News " + list.name().toLowerCase(java.util.Locale.ROOT) + ": " + e.getMessage(), e.isRetryable(), e.retryAfterEpochMillis);
@@ -114,7 +213,7 @@ public class SyncManager {
                 ContentItem existing = db.contentDao().findBySource(item.sourceType, item.sourceId);
                 return existing == null || existing.metadataJson == null || !existing.metadataJson.contains("\"enriched_at\"");
             });
-            out.stats.add(ingestor.ingest(items));
+            out.addStats(ingestor.ingest(items));
         } catch (SourceException e) {
             out.fail("GitHub Trending: " + e.getMessage(), e.isRetryable(), e.retryAfterEpochMillis);
         }
@@ -143,7 +242,7 @@ public class SyncManager {
         try {
             FeedSource.Refresh r = feeds.refresh(feed);
             if (!r.notModified) {
-                out.stats.add(ingestor.ingest(r.items));
+                out.addStats(ingestor.ingest(r.items));
                 if (r.title != null && (feed.title == null || feed.title.isEmpty())) feed.title = r.title;
                 if (r.siteUrl != null) feed.siteUrl = r.siteUrl;
                 feed.etag = r.etag;
@@ -200,8 +299,8 @@ public class SyncManager {
                     long started = startedAt(item);
                     if (isNew && f.lastFetchedAt > 0 && f.notifyNewThreads && now - started < FORUM_ALERT_WINDOW_MS) fresh.add(item.title);
                 }
-                out.stats.add(ingestor.ingest(items));
-                report.newForumThreads.addAll(fresh);
+                out.addStats(ingestor.ingest(items));
+                report.addNewForumThreads(fresh);
                 f.lastError = null;
                 f.needsVerification = false;
                 f.consecutiveFailures = 0;
@@ -234,29 +333,33 @@ public class SyncManager {
 
     void syncReleases(SyncReport report) {
         SyncReport.SourceOutcome out = report.outcome(SourceType.GITHUB_RELEASE.code);
-        for (TrackedRepo repo : db.trackedRepoDao().getEnabled()) {
-            try {
-                ReleaseSource.Result r = releases.fetch(repo, config.includePrereleases());
-                if (!r.notModified) {
-                    Ingestor.Stats s = ingestor.ingest(r.items);
-                    out.stats.add(s);
-                    report.newReleases += s.inserted;
-                    repo.etag = r.etag;
-                }
-                repo.lastError = null;
-                repo.lastCheckedAt = clock.millis();
-                db.trackedRepoDao().update(repo);
-                if (r.rateLimitRemaining == 0) {
-                    out.fail("GitHub API quota exhausted; remaining repositories were skipped", true, 0);
-                    return;
-                }
-            } catch (SourceException e) {
-                repo.lastError = e.getMessage();
-                repo.lastCheckedAt = clock.millis();
-                db.trackedRepoDao().update(repo);
-                out.fail(repo.owner + "/" + repo.name + ": " + e.getMessage(), e.isRetryable(), e.retryAfterEpochMillis);
-                if (e.kind == SourceException.Kind.RATE_LIMITED) return; // the quota is shared by all repos
+        AtomicBoolean quotaHit = new AtomicBoolean();
+        for (TrackedRepo repo : db.trackedRepoDao().getEnabled()) refreshRepo(repo, report, out, quotaHit);
+    }
+
+    /** {@code quotaHit} is shared by all repositories: once the API quota is gone the rest are skipped. */
+    private void refreshRepo(TrackedRepo repo, SyncReport report, SyncReport.SourceOutcome out, AtomicBoolean quotaHit) {
+        if (quotaHit.get()) return;
+        try {
+            ReleaseSource.Result r = releases.fetch(repo, config.includePrereleases());
+            if (!r.notModified) {
+                Ingestor.Stats s = ingestor.ingest(r.items);
+                out.addStats(s);
+                report.addNewReleases(s.inserted);
+                repo.etag = r.etag;
             }
+            repo.lastError = null;
+            repo.lastCheckedAt = clock.millis();
+            db.trackedRepoDao().update(repo);
+            if (r.rateLimitRemaining == 0 && !quotaHit.getAndSet(true)) {
+                out.fail("GitHub API quota exhausted; remaining repositories were skipped", true, 0);
+            }
+        } catch (SourceException e) {
+            repo.lastError = e.getMessage();
+            repo.lastCheckedAt = clock.millis();
+            db.trackedRepoDao().update(repo);
+            out.fail(repo.owner + "/" + repo.name + ": " + e.getMessage(), e.isRetryable(), e.retryAfterEpochMillis);
+            if (e.kind == SourceException.Kind.RATE_LIMITED) quotaHit.set(true); // the quota is shared by all repos
         }
     }
 }

@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+* Refreshing sources now shows a progress bar with a done/total counter.
+* Sources are refreshed in parallel (4 at a time by default). Settings > Sync lets you choose 2 to 8 at once, or turn
+  parallel refresh off to go one by one.
+
 ## 0.2.0 — XDA Forums
 
 * New source: XDA Forums. Follow a device forum by address or by browsing the forum tree (with a filter); its newest

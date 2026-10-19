@@ -191,6 +191,27 @@ public class AppSettings implements SyncConfig {
         prefs.edit().putBoolean("forums_wifi_only", v).apply();
     }
 
+    public static final int MIN_SYNC_THREADS = 2;
+    public static final int MAX_SYNC_THREADS = 8;
+
+    @Override
+    public boolean parallelSync() {
+        return prefs.getBoolean("parallel_sync", true);
+    }
+
+    public void setParallelSync(boolean v) {
+        prefs.edit().putBoolean("parallel_sync", v).apply();
+    }
+
+    @Override
+    public int syncThreads() {
+        return clamp(prefs.getInt("sync_threads", 4), MIN_SYNC_THREADS, MAX_SYNC_THREADS);
+    }
+
+    public void setSyncThreads(int n) {
+        prefs.edit().putInt("sync_threads", clamp(n, MIN_SYNC_THREADS, MAX_SYNC_THREADS)).apply();
+    }
+
     public boolean releaseAlertsEnabled() {
         return prefs.getBoolean("release_alerts", false);
     }

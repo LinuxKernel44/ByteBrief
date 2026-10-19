@@ -33,6 +33,7 @@ import app.bytebrief.ui.glass.GlassScreen
 import app.bytebrief.ui.components.Ic
 import app.bytebrief.ui.components.Panel
 import app.bytebrief.ui.components.PlainIconButton
+import app.bytebrief.settings.AppSettings
 import app.bytebrief.ui.components.SectionHeader
 import app.bytebrief.ui.components.SwitchRow
 import app.bytebrief.ui.components.TextInput
@@ -108,6 +109,15 @@ LazyColumn(
                             for (h in listOf(1, 3, 6, 12, 24)) Chip("Every $h h", s.v.syncIntervalHours() == h, { vm.setSyncInterval(h) })
                         }
                         SwitchRow("Wi-Fi only", "Skip background refreshes on mobile data.", s.v.syncOnUnmeteredOnly(), { vm.setUnmeteredOnly(it) })
+                    }
+                    Divider()
+                    SwitchRow("Refresh sources in parallel", "Fetches several sources at once, which is faster. Turn off to go one by one.", s.v.parallelSync(), { vm.setParallelSync(it) })
+                    if (s.v.parallelSync()) {
+                        Txt("Simultaneous sources", style = BBType.Body, modifier = Modifier.padding(top = 4.dp))
+                        Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()).padding(vertical = 8.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            for (n in AppSettings.MIN_SYNC_THREADS..AppSettings.MAX_SYNC_THREADS) Chip("$n", s.v.syncThreads() == n, { vm.setSyncThreads(n) })
+                        }
+                        Txt("More is faster but uses more battery and data at once. Default: 4.", style = BBType.Caption, modifier = Modifier.padding(bottom = 10.dp))
                     }
                     Divider()
                     Txt("Keep items for", style = BBType.Body, modifier = Modifier.padding(top = 10.dp))

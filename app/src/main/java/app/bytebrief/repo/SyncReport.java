@@ -17,10 +17,14 @@ public final class SyncReport {
         /** Epoch millis before which a retry is pointless (rate limits), or 0. */
         public long retryAfter;
 
-        void fail(String message, boolean retryable, long retryAfter) {
+        synchronized void addStats(Ingestor.Stats other) {
+            stats.add(other);
+        }
+
+        synchronized void fail(String message, boolean retryable, long retryAfter) {
             this.status = stats.inserted + stats.updated + stats.unchanged > 0 ? Status.PARTIAL : Status.FAILED;
             this.error = message;
-            this.retryable = retryable;
+            this.retryable |= retryable; // one retryable failure is enough, whatever order parallel tasks finish in
             this.retryAfter = Math.max(this.retryAfter, retryAfter);
         }
     }
@@ -33,13 +37,21 @@ public final class SyncReport {
     public int pruned;
     public long finishedAt;
 
-    SourceOutcome outcome(String key) {
+    synchronized SourceOutcome outcome(String key) {
         SourceOutcome o = outcomes.get(key);
         if (o == null) {
             o = new SourceOutcome();
             outcomes.put(key, o);
         }
         return o;
+    }
+
+    synchronized void addNewReleases(int n) {
+        newReleases += n;
+    }
+
+    synchronized void addNewForumThreads(java.util.List<String> titles) {
+        newForumThreads.addAll(titles);
     }
 
     public int totalNew() {

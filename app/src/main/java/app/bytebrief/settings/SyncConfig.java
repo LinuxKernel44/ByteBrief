@@ -32,4 +32,14 @@ public interface SyncConfig {
     default boolean forumsWifiOnly() {
         return true;
     }
+
+    /** Whether sources are refreshed concurrently; when false they are processed one after another. */
+    default boolean parallelSync() {
+        return true;
+    }
+
+    /** Number of sources refreshed at the same time when {@link #parallelSync()} is on. */
+    default int syncThreads() {
+        return 4;
+    }
 }

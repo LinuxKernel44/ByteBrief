@@ -1,6 +1,13 @@
 package app.bytebrief.ui.screens
 
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.draw.clip
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
@@ -60,9 +67,23 @@ private fun SyncBanner(status: ContentRepository.SyncStatus?) {
         else -> null
     } ?: return
     val color = if (failed.isNotEmpty() && status?.running != true) BB.Warm else BB.TextTertiary
-    Row(Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 2.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-        if (failed.isNotEmpty() && status?.running != true) app.bytebrief.ui.components.Icon(Ic.WARNING, color, size = 14.dp)
-        Txt(text, style = BBType.Caption, color = color, maxLines = 2)
+    Column(Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 2.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+            if (failed.isNotEmpty() && status?.running != true) app.bytebrief.ui.components.Icon(Ic.WARNING, color, size = 14.dp)
+            Txt(text, style = BBType.Caption, color = color, maxLines = 2, modifier = Modifier.weight(1f))
+            if (status?.running == true && status.total > 0) Txt("${status.done}/${status.total}", style = BBType.Caption, color = BB.TextTertiary)
+        }
+        if (status?.running == true) SyncProgressBar(status.fraction())
+    }
+}
+
+/** Thin determinate bar; a negative fraction means the amount of work is not known yet. */
+@Composable
+private fun SyncProgressBar(fraction: Float) {
+    val shape = RoundedCornerShape(2.dp)
+    val animated by animateFloatAsState(fraction.coerceAtLeast(0f), label = "syncProgress")
+    Box(Modifier.fillMaxWidth().height(4.dp).clip(shape).background(BB.AccentSoft)) {
+        Box(Modifier.fillMaxWidth(animated).fillMaxHeight().clip(shape).background(BB.Accent))
     }
 }
 

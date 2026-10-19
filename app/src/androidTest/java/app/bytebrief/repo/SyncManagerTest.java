@@ -66,6 +66,10 @@ public class SyncManagerTest {
         @Override public boolean includePrereleases() { return false; }
         @Override public int retentionDays() { return 36500; }
         @Override public int trendingEnrichBudget() { return 0; }
+        boolean parallel = true;
+        int threads = 4;
+        @Override public boolean parallelSync() { return parallel; }
+        @Override public int syncThreads() { return threads; }
     }
 
     private String asset(String name) throws Exception {
@@ -126,6 +130,32 @@ public class SyncManagerTest {
     public void tearDown() throws Exception {
         db.close();
         server.shutdown();
+    }
+
+    @Test
+    public void parallelSyncReportsProgressUpToTheTotalAndMatchesSequentialResults() {
+        java.util.List<int[]> seen = java.util.Collections.synchronizedList(new java.util.ArrayList<>());
+        SyncReport report = sync.syncAll(false, (done, total, label) -> seen.add(new int[]{done, total}));
+        assertEquals(2, report.outcomes.get("hn").stats.inserted);
+        assertEquals(3, report.outcomes.get("rss").stats.inserted);
+        assertEquals(1, report.newReleases);
+        int[] last = new int[]{-1, -1};
+        for (int[] p : seen) {
+            assertEquals(4, p[1]); // HN, trending, one repository, one feed
+            if (p[0] > last[0]) last = p;
+        }
+        assertEquals(4, last[0]);
+        assertEquals(5, seen.size()); // 0/4 then one call per finished task
+    }
+
+    @Test
+    public void sequentialSyncGivesTheSameResultWhenParallelIsOff() {
+        config.parallel = false;
+        SyncReport report = sync.syncAll();
+        for (Map.Entry<String, SyncReport.SourceOutcome> e : report.outcomes.entrySet()) {
+            assertEquals(e.getKey() + ": " + e.getValue().error, SyncReport.Status.OK, e.getValue().status);
+        }
+        assertEquals(18, report.totalNew());
     }
 
     @Test
@@ -227,6 +257,7 @@ public class SyncManagerTest {
         db.trackedRepoDao().insertIgnore(second);
         routes.put("/gh/repos/o/r/releases?per_page=10", new MockResponse().setResponseCode(403)
                 .setHeader("x-ratelimit-remaining", "0").setHeader("x-ratelimit-reset", "1760000000"));
+        config.parallel = false; // "remaining repositories are skipped" only has a defined meaning in order
         SyncReport r = sync.syncAll();
         SyncReport.SourceOutcome o = r.outcomes.get("gh_release");
         assertEquals(SyncReport.Status.FAILED, o.status);
