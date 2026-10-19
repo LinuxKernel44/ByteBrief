@@ -26,7 +26,11 @@ import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
+import kotlinx.coroutines.delay
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -85,7 +89,8 @@ fun Modifier.tappable(
     val pressed by source.collectIsPressedAsState()
     val reduced = LocalGlassConfig.current.reducedMotion
     val scale by animateFloatAsState(if (pressed && !reduced) 0.97f else 1f, tween(90), label = "press")
-    val alpha = if (enabled) 1f else 0.4f
+    // Dimming on press is the one cue every tappable shares, so no control ever feels dead under the finger.
+    val alpha = if (!enabled) 0.4f else if (pressed && !reduced) 0.72f else 1f
     return this
         .defaultMinSize(minHeight = minSize)
         .scale(scale)
@@ -97,6 +102,11 @@ fun Modifier.tappable(
         .clickable(interactionSource = source, indication = null, enabled = enabled, role = role, onClick = onClick)
 }
 
+/**
+ * Glass button. [done] shows a finished state (check mark, green tint, not tappable) for actions that
+ * leave something lasting, such as following a forum. [confirmLabel] instead flashes that label with a
+ * check for a moment after a one-shot action whose result is not otherwise visible.
+ */
 @Composable
 fun GlassButton(
     label: String,
@@ -105,18 +115,33 @@ fun GlassButton(
     icon: Ic? = null,
     prominent: Boolean = false,
     enabled: Boolean = true,
+    done: Boolean = false,
+    confirmLabel: String? = null,
 ) {
-    val tint = if (prominent) Color(0xB32A5E8F) else BB.GlassTint
+    var flashing by remember { mutableStateOf(false) }
+    LaunchedEffect(flashing) {
+        if (flashing) {
+            delay(1800)
+            flashing = false
+        }
+    }
+    val showDone = done || flashing
+    val tint = when {
+        showDone -> Color(0xB3226B4A)
+        prominent -> Color(0xB32A5E8F)
+        else -> BB.GlassTint
+    }
     Row(
         modifier
             .glassSurface(24.dp, GlassLevel.Control, tint)
-            .tappable(onClick, enabled = enabled)
+            .tappable({ if (!done) { onClick(); if (confirmLabel != null) flashing = true } }, enabled = enabled)
             .padding(horizontal = 18.dp, vertical = 10.dp),
         horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterHorizontally),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        if (icon != null) Icon(icon, if (prominent) Color.White else BB.Accent, size = 18.dp)
-        Txt(label, style = BBType.Label, color = Color.White, maxLines = 1)
+        val shownIcon = if (showDone) Ic.CHECK else icon
+        if (shownIcon != null) Icon(shownIcon, if (showDone) BB.Success else if (prominent) Color.White else BB.Accent, size = 18.dp)
+        Txt(if (flashing && confirmLabel != null) confirmLabel else label, style = BBType.Label, color = Color.White, maxLines = 1)
     }
 }
 

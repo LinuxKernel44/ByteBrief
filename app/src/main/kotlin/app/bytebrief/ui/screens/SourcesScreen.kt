@@ -271,7 +271,7 @@ LazyColumn(
                             }
                         } else {
                             TextInput(token, { token = it }, "Paste a token (read-only access is enough)", leading = Ic.LOCK)
-                            GlassButton("Save token", { vm.saveToken(token); token = "" }, icon = Ic.CHECK, enabled = token.isNotBlank())
+                            GlassButton("Save token", { vm.saveToken(token); token = "" }, icon = Ic.CHECK, enabled = token.isNotBlank(), confirmLabel = "Saved")
                         }
                     }
                 }

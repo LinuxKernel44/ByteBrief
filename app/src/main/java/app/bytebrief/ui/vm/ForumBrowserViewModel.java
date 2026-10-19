@@ -43,11 +43,16 @@ public final class ForumBrowserViewModel extends ViewModel {
     private final Deque<String> history = new ArrayDeque<>();
     public final MutableLiveData<State> state = new MutableLiveData<>();
     public final MutableLiveData<String> message = new MutableLiveData<>();
+    /** Forums already followed, so the Follow button can show its finished state. */
+    public final androidx.lifecycle.LiveData<List<Forum>> followed;
+    /** True while a follow request is running. */
+    public final MutableLiveData<Boolean> following = new MutableLiveData<>(false);
     private String current = ForumUrls.HOME;
     private boolean started;
 
     ForumBrowserViewModel(AppContainer c) {
         this.c = c;
+        this.followed = c.forums.forums();
     }
 
     /** Loads the root the first time the screen opens. */
@@ -91,6 +96,7 @@ public final class ForumBrowserViewModel extends ViewModel {
     /** Follows the forum currently shown. */
     public void followCurrent() {
         String url = current;
+        following.setValue(true);
         c.io.execute(() -> {
             try {
                 Forum f = c.forums.addForum(url);
@@ -98,6 +104,7 @@ public final class ForumBrowserViewModel extends ViewModel {
             } catch (SourceException e) {
                 message.postValue("Couldn't follow it: " + e.getMessage());
             }
+            following.postValue(false);
         });
     }
 

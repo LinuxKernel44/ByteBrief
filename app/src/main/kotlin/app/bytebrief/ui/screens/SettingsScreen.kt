@@ -148,7 +148,7 @@ LazyColumn(
                     }
                     Divider()
                     FlowRow(Modifier.padding(vertical = 10.dp), horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                        GlassButton("Forget what it learned", { vm.resetLearned(); notice = "Learned preferences were cleared. Topics you follow are kept." }, icon = Ic.REFRESH)
+                        GlassButton("Forget what it learned", { vm.resetLearned(); notice = "Learned preferences were cleared. Topics you follow are kept." }, icon = Ic.REFRESH, confirmLabel = "Cleared")
                         GlassButton("Reset everything", { confirmReset = true }, icon = Ic.TRASH)
                     }
                     notice?.let { Txt(it, style = BBType.Caption, color = BB.Accent, modifier = Modifier.padding(bottom = 8.dp)) }

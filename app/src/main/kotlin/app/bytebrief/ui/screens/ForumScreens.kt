@@ -181,6 +181,8 @@ fun ForumBrowserScreen() {
     val nav = LocalNav.current
     val state by vm.state.observeAsState()
     val message by vm.message.observeAsState()
+    val followed by vm.followed.observeAsState()
+    val following by vm.following.observeAsState()
     var filter by remember(state?.url) { mutableStateOf("") }
     LaunchedEffect(Unit) { vm.start() }
 
@@ -206,7 +208,12 @@ fun ForumBrowserScreen() {
                     Column(Modifier.fillMaxWidth().frostedCard(18.dp).padding(14.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
                         Txt(s.title ?: "This forum", style = BBType.Heading)
                         Txt("New threads will appear in your feed, and you can read them in full.", style = BBType.BodySecondary)
-                        GlassButton("Follow this forum", { vm.followCurrent() }, icon = Ic.PLUS, prominent = true)
+                        val isFollowed = followed.orEmpty().any { it.url.trimEnd('/').equals(s.url.trimEnd('/'), ignoreCase = true) }
+                        when {
+                            isFollowed -> GlassButton("Following", {}, icon = Ic.CHECK, done = true)
+                            following == true -> GlassButton("Following…", {}, icon = Ic.PLUS, prominent = true, enabled = false)
+                            else -> GlassButton("Follow this forum", { vm.followCurrent() }, icon = Ic.PLUS, prominent = true)
+                        }
                     }
                 }
                 if (s != null && s.nodes.size > 8) item {

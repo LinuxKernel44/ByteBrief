@@ -1,5 +1,10 @@
 # Changelog
 
+## Unreleased
+
+* Buttons react to a tap: every control dims while pressed, "Follow this forum" turns into a green "Following" once
+  done, and one-shot actions such as saving a token or clearing what was learned briefly confirm themselves.
+
 ## 0.2.1 — Faster refresh
 
 * Refreshing sources now shows a progress bar with a done/total counter.
